@@ -47,7 +47,7 @@ prisma-migrate:
 	npx prisma migrate dev --name "$(name)"
 
 .PHONY: prisma-studio
-prisma-studio:
+prisma:
 	npx prisma studio
 
 .PHONY: docker-build

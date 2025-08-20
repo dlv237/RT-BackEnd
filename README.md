@@ -1,111 +1,100 @@
-# Express + Prisma Application
+# RT Backend
 
-This project is a simple Express application integrated with Prisma for database management. Below are the instructions for setting up and running the application.
+API en Express + Prisma lista para escalar (Docker, Makefile, middlewares base, Prisma singleton).
 
-## Prerequisites
+## Requisitos
 
+- Node.js 18+ (recomendado 20+)
+- npm
+- Docker
 
-## Getting Started
+## Inicio rápido
 
-1. **Clone the repository:**
+1) Crear el archivo de entorno `.env`
 
-   ```bash
-   git clone <repository-url>
-   cd express-prisma-app
-   ```
+- Opción A (rápida):
 
-2. **Install dependencies:**
-
-   Run the following command to install the required packages:
-
-   ```bash
-   npm install
-   ```
-
-3. **Set up the database:**
-
-   Update the `DATABASE_URL` in the `.env` file with the supabase staging database connection string.
-
-4. **Run migrations:**
-
-   To create the database schema, run:
-
-   ```bash
-   npx prisma migrate dev
-   ```
-
-5. **Start the application:**
-
-   You can start the application using:
-
-   ```bash
-   npm run start
-   ```
-
-   Alternatively, for development, you can use:
-
-   ```bash
-   npm run dev
-   ```
-
-## RT Backend
-
-Express + Prisma API.
-
-## Setup
-
-1. Copy env:
-
-```
+```bash
 cp .env.example .env
 ```
 
-2. Install deps:
+- Opción B (tal como lo requieres):
 
+```bash
+touch .env
+# Abre .env y copia/pega el contenido desde .env.example, luego ajusta valores
 ```
+
+2) Instalar dependencias
+
+```bash
 make install
 ```
 
-3. Dev mode:
+3) Ejecutar en desarrollo
 
-```
+```bash
 make dev
 ```
 
+La API expone un endpoint de salud en `GET /health`.
+
+## Variables de entorno
+
+- `PORT`: Puerto de la API (por defecto 3000)
+- `NODE_ENV`: development | production
+- `DATABASE_URL`: cadena de conexión (usa la de Supabase por entorno)
+- `DIRECT_URL`: (opcional) URL directa para Prisma (útil si usas pooling en DATABASE_URL)
+
 ## Prisma
 
-- Generate client: `make prisma-generate`
-- Create migration: `make prisma-migrate name=init`
-- Studio: `make prisma-studio`
+- Generar cliente:
 
-## Build & Run
-
+```bash
+make prisma-generate
 ```
+
+- Crear migración (cuando el modelo esté definido):
+
+```bash
+make prisma-migrate name=init
+```
+
+- Abrir Studio:
+
+```bash
+make prisma-studio
+```
+
+## Build y ejecución
+
+```bash
 make build
 make start
 ```
 
 ## Docker
 
-```
+```bash
 make docker-build
 PORT=3000 make docker-run
 ```
 
-Note: For Supabase, set `DATABASE_URL` (and optionally `DIRECT_URL`) in `.env`.
-## Usage
+O con Docker Compose (solo servicio API, DB externa en Supabase):
 
-Once the application is running, you can access it at `http://localhost:3000`. You can use tools like Postman or curl to interact with the API endpoints defined in the routes.
+```bash
+make compose-up
+make compose-down
+```
 
-## Project Structure
+## Estructura del proyecto
 
-- `src/app.ts`: Entry point of the application.
-- `src/prisma/schema.prisma`: Defines the database schema for Prisma.
-- `src/controllers/index.ts`: Contains the IndexController with route handling methods.
-- `src/routes/index.ts`: Sets up the application routes.
-- `src/types/index.ts`: Custom types for request and response objects.
-- `prisma/migrations`: Contains migration files for database schema changes.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
+- `src/app.ts`: Punto de entrada de la aplicación
+- `src/middlewares/*`: 404 y manejador de errores
+- `src/lib/prisma.ts`: Singleton de PrismaClient
+- `src/controllers/*`: Controladores (o Resolvers)
+- `src/services/*`: Servicios de dominio (incluye `healthService`)
+- `src/routes/index.ts`: Registro de rutas (incluye `GET /health`)
+- `prisma/schema.prisma`: Esquema de Prisma
+- `Makefile`: Comandos útiles (dev, build, prisma, docker, compose)
+- `Dockerfile` y `docker-compose.yml`: Contenerización de la API
