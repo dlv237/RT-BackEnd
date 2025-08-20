@@ -39,6 +39,8 @@ make dev
 
 La API expone un endpoint de salud en `GET /health`.
 
+La documentación dinámica se puede acceder en  `http://localhost:3000/docs `
+
 ## Variables de entorno
 
 - `PORT`: Puerto de la API (por defecto 3000)

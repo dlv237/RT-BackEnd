@@ -3,6 +3,8 @@ import { setRoutes } from './routes'
 import dotenv from 'dotenv'
 import notFound from './middlewares/notFound'
 import errorHandler from './middlewares/errorHandler'
+import swaggerUi from 'swagger-ui-express'
+import { swaggerSpec } from './config/swagger'
 
 // Load environment variables early
 dotenv.config()
@@ -15,6 +17,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 // Routes
 setRoutes(app)
+
+// Swagger docs
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+app.get('/docs.json', (_req, res) => res.json(swaggerSpec))
 
 // 404 and error handling
 app.use(notFound)
