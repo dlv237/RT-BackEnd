@@ -4,9 +4,6 @@ This project is a simple Express application integrated with Prisma for database
 
 ## Prerequisites
 
-- Node.js (version 14 or higher)
-- npm (Node package manager)
-- Install vscode Prisma extension for code highlighting
 
 ## Getting Started
 
@@ -51,6 +48,51 @@ This project is a simple Express application integrated with Prisma for database
    npm run dev
    ```
 
+## RT Backend
+
+Express + Prisma API.
+
+## Setup
+
+1. Copy env:
+
+```
+cp .env.example .env
+```
+
+2. Install deps:
+
+```
+make install
+```
+
+3. Dev mode:
+
+```
+make dev
+```
+
+## Prisma
+
+- Generate client: `make prisma-generate`
+- Create migration: `make prisma-migrate name=init`
+- Studio: `make prisma-studio`
+
+## Build & Run
+
+```
+make build
+make start
+```
+
+## Docker
+
+```
+make docker-build
+PORT=3000 make docker-run
+```
+
+Note: For Supabase, set `DATABASE_URL` (and optionally `DIRECT_URL`) in `.env`.
 ## Usage
 
 Once the application is running, you can access it at `http://localhost:3000`. You can use tools like Postman or curl to interact with the API endpoints defined in the routes.

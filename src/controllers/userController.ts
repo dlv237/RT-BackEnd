@@ -1,9 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import prisma from '../lib/prisma';
 
-const prisma = new PrismaClient();
-
-export async function getUsers(req: Request, res: Response) {
-  const users = await prisma.user.findMany();
-  res.json(users);
+export async function getUsers(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const users = await prisma.user.findMany();
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
 }

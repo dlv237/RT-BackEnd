@@ -1,13 +1,39 @@
-import express from 'express';
-import { json } from 'body-parser';
-import { setRoutes } from './routes';
+import express from 'express'
+import { setRoutes } from './routes'
+import dotenv from 'dotenv'
+import notFound from './middlewares/notFound'
+import errorHandler from './middlewares/errorHandler'
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Load environment variables early
+dotenv.config()
 
-app.use(json());
-setRoutes(app);
+const app = express()
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000
 
-app.listen(PORT, () => {
-console.log(`🚀 Server running on http://localhost:${PORT}!`);
-});
+// Core middlewares
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+// Routes
+setRoutes(app)
+
+// 404 and error handling
+app.use(notFound)
+app.use(errorHandler)
+
+const server = app.listen(PORT, () => {
+	console.log(`🚀 Server running on http://localhost:${PORT}!`)
+})
+
+// Graceful shutdown
+const shutdown = (signal: string) => {
+	console.log(`\n${signal} received. Shutting down...`)
+	server.close(() => {
+		console.log('HTTP server closed')
+		process.exit(0)
+	})
+	// Force exit after 10s
+	setTimeout(() => process.exit(1), 10_000).unref()
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'))
+process.on('SIGTERM', () => shutdown('SIGTERM'))
