@@ -10,6 +10,41 @@ const options: swaggerJSDoc.Options = {
     servers: [
       { url: `http://localhost:${process.env.PORT || 3000}` }
     ],
+    components: {
+      schemas: {
+        User: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            role: { type: 'string', enum: ['admin', 'coordinator', 'tutor', 'parent'] },
+            rut: { type: 'string', nullable: true },
+            phone: { type: 'string', nullable: true },
+            address: { type: 'string', nullable: true },
+            chargeEmail: { type: 'string', nullable: true },
+            institutionId: { type: 'integer', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+          required: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt']
+        },
+        CreateUserInput: {
+          type: 'object',
+          properties: {
+            role: { type: 'string', enum: ['admin', 'coordinator', 'tutor', 'parent'] },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            rut: { type: 'string' },
+            phone: { type: 'string' },
+            address: { type: 'string' },
+            chargeEmail: { type: 'string' },
+            institutionId: { type: 'integer', nullable: true },
+          },
+          required: ['role', 'name', 'email', 'rut']
+        }
+      }
+    }
   },
   apis: ['src/routes/**/*.ts', 'src/controllers/**/*.ts'],
 }

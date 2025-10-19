@@ -1,6 +1,6 @@
 // routes/userRoutes.ts
 import { Router } from 'express';
-import { getUsers } from '../controllers/userController';
+import { createUser, getUsers } from '../controllers/userController';
 
 const router = Router();
 
@@ -9,11 +9,10 @@ const router = Router();
  * /users:
  *   get:
  *     summary: List users
- *     tags:
- *       - Users
+ *     tags: [Users]
  *     responses:
  *       200:
- *         description: A list of users
+ *         description: List of users
  *         content:
  *           application/json:
  *             schema:
@@ -21,5 +20,27 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-router.get('/', getUsers); // GET /users → llama a getUsers()
+router.get('/', getUsers);
+
+/**
+ * @openapi
+ * /users:
+ *   post:
+ *     summary: Create a user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateUserInput'
+ *     responses:
+ *       201:
+ *         description: Created user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ */
+router.post('/', createUser);
 export default router;

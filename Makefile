@@ -69,3 +69,8 @@ compose-up:
 .PHONY: compose-down
 compose-down:
 	docker compose down
+
+.PHONY: generate-types
+generate-types:
+	npm run docs:emit
+	npm run types:openapi
