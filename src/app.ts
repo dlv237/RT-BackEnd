@@ -1,6 +1,7 @@
 import express from 'express'
 import { setRoutes } from './routes'
 import dotenv from 'dotenv'
+import cors from 'cors'
 import notFound from './middlewares/notFound'
 import errorHandler from './middlewares/errorHandler'
 import swaggerUi from 'swagger-ui-express'
@@ -11,11 +12,17 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000
-
 // Core middlewares
+app.use(cors({
+	origin: 'http://localhost:5173',
+	credentials: true,
+	methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+	allowedHeaders: ['Content-Type', 'Authorization'],
+}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 // Routes
+setRoutes(app)
 setRoutes(app)
 
 // Swagger docs

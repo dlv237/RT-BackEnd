@@ -16,3 +16,11 @@ export async function createInstitution(req: Request, res: Response, next: NextF
     next(err);
   }
 }
+export async function getInstitutions(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const institutions = await prisma.institution.findMany();
+    res.json(institutions);
+  } catch (err) {
+    next(err);
+  }
+}

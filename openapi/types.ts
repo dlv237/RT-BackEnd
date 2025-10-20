@@ -6,6 +6,17 @@
 
 export interface paths {
   "/institutions": {
+    /** Get all institutions */
+    get: {
+      responses: {
+        /** @description List of institutions */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Institution"][];
+          };
+        };
+      };
+    };
     /** Create an institution */
     post: {
       requestBody: {

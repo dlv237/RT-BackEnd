@@ -1,6 +1,6 @@
 // routes/institutionRoutes.ts
 import { Router } from 'express';
-import { createInstitution } from '../controllers/institutionController';
+import { createInstitution, getInstitutions } from '../controllers/institutionController';
 const router = Router();
 
 /**
@@ -24,5 +24,21 @@ const router = Router();
  *               $ref: '#/components/schemas/Institution'
  */
 router.post('/', createInstitution);
-
+/**
+ * @openapi
+ * /institutions:
+ *   get:
+ *     summary: Get all institutions
+ *     tags: [Institutions]
+ *     responses:
+ *       200:
+ *         description: List of institutions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Institution'
+ */
+router.get('/', getInstitutions);
 export default router;

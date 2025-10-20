@@ -48,15 +48,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       BankAccount
     } = req.body
 
-    const{
-      bankName,
-      accountType,
-      accountNumber,
-      rutHolder,
-      accountEmail
-    } = BankAccount
-
-    const password = "RedTutores" + rut.toString()
+    const password = "RedTutores" + rut?.toString()
 
     const hashedPassword = await argon2.hash(password, {
       secret: Buffer.from(process.env.ARGON2_SECRET_PEPPER || '', 'base64')
@@ -90,7 +82,15 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       });
     }
 
-    if (bankName && accountType && accountNumber) {
+    if (BankAccount) {
+      const {
+        bankName,
+        accountType,
+        accountNumber,
+        rutHolder,
+        accountEmail
+      } = BankAccount
+
       await prisma.userBankAccount.create({
         data: {
           userId: newUser.id,
