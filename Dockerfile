@@ -1,40 +1,35 @@
-# syntax=docker/dockerfile:1.7
-
-ARG NODE_VERSION=20.12.2
-FROM node:${NODE_VERSION}-alpine AS base
+# Stage 1: build
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# Install prod deps (prisma engine etc. compiled later)
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-FROM node:${NODE_VERSION}-alpine AS build
-WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+# OpenSSL en build (para generar cliente si lo requiere)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
 COPY tsconfig.json ./
 COPY src ./src
-COPY prisma ./prisma
+COPY openapi ./openapi
+COPY openapi.json ./
+RUN npm run build
 
-# Generate Prisma client and build TS
-RUN npx prisma generate
-RUN npx tsc
-
-FROM node:${NODE_VERSION}-alpine AS runtime
-ENV NODE_ENV=production
+# Stage 2: runtime
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Copy runtime node_modules from base (prod only)
-COPY --from=base /app/node_modules ./node_modules
+# OpenSSL en runtime (para que el engine cargue correctamente)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Copy build artifacts
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Expose port
+COPY prisma ./prisma
+COPY --from=builder /app/dist ./dist
+
 EXPOSE 3000
-
-# Healthcheck (optional simple TCP)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD node -e "require('net').createConnection({host:'127.0.0.1', port: process.env.PORT||3000}).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
-
 CMD ["node", "dist/app.js"]
