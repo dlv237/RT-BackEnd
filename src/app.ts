@@ -1,14 +1,11 @@
+import './config/env'
 import express from 'express'
 import { setRoutes } from './routes'
-import dotenv from 'dotenv'
 import cors from 'cors'
 import notFound from './middlewares/notFound'
 import errorHandler from './middlewares/errorHandler'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './config/swagger'
-
-// Load environment variables early
-dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000
@@ -22,7 +19,6 @@ app.use(cors({
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 // Routes
-setRoutes(app)
 setRoutes(app)
 
 // Swagger docs
