@@ -23,12 +23,12 @@ app.use(cors({
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-// Routes
-setRoutes(app)
 
 // Swagger docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.get('/docs.json', (_req, res) => res.json(swaggerSpec))
+// Routes
+setRoutes(app)
 
 // 404 and error handling
 app.use(notFound)
