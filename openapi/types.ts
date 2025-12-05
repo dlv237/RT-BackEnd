@@ -70,6 +70,68 @@ export interface paths {
       };
     };
   };
+  "/auth/request-password-reset": {
+    /** Request password reset */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            /** Format: email */
+            email: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Recovery email sent */
+        200: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description User not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  "/auth/reset-password": {
+    /** Reset password using token */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": {
+            token: string;
+            /** Format: password */
+            newPassword: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Password updated */
+        200: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Invalid token or missing fields */
+        400: {
+          content: never;
+        };
+      };
+    };
+  };
   "/institutions": {
     /** Get all institutions */
     get: {
