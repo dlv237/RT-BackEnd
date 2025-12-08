@@ -493,6 +493,111 @@
           "phone",
           "rut"
         ]
+      },
+      "Fee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "classModality": {
+            "type": "string",
+            "enum": [
+              "inPerson",
+              "online",
+              "cancelled"
+            ]
+          },
+          "numberOfStudents": {
+            "type": "integer"
+          },
+          "amountToPay": {
+            "type": "integer"
+          },
+          "amountToCharge": {
+            "type": "integer"
+          },
+          "institutionId": {
+            "type": "integer"
+          },
+          "currentlyActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "classModality",
+          "numberOfStudents",
+          "amountToPay",
+          "amountToCharge",
+          "institutionId",
+          "currentlyActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SimulateFeePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "fees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Fee"
+            }
+          },
+          "type": {
+            "type": "string"
+          },
+          "classModality": {
+            "type": "string",
+            "enum": [
+              "inPerson",
+              "online",
+              "cancelled"
+            ]
+          },
+          "numberOfStudents": {
+            "type": "integer"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in minutes"
+          }
+        },
+        "required": [
+          "fees",
+          "type",
+          "classModality",
+          "numberOfStudents",
+          "duration"
+        ]
+      },
+      "SimulateFeePaymentResponse": {
+        "type": "object",
+        "properties": {
+          "amountToPay": {
+            "type": "number"
+          },
+          "amountToCharge": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amountToPay",
+          "amountToCharge"
+        ]
       }
     }
   },
@@ -742,6 +847,124 @@
           },
           "400": {
             "description": "Invalid token or missing fields"
+          }
+        }
+      }
+    },
+    "/fees/{institutionId}": {
+      "get": {
+        "summary": "Get all active fees from an institution",
+        "tags": [
+          "Fees"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "institutionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Institution ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of active fees",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Fee"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Institution not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fees/simulate": {
+      "post": {
+        "summary": "Simulate a fee payment given a custom duration",
+        "tags": [
+          "Fees"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateFeePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simulated fee payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateFeePaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - fees list is required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Fee not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

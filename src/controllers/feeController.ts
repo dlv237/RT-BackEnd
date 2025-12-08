@@ -2,17 +2,19 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import { Fee } from '@prisma/client';
 
-
-// TO DO: filter the permission to allow only the admin to see any institution's fees
-// and the coordinator, tutor or parent to see the fees of their own institution
+// Get all active fees from an institution
 export async function getFees(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params;
-    const fees = await getActiveInstitutionFees(Number(institutionId));
-    if (!fees) {
+
+    const institution = await prisma.institution.findUnique({
+      where: { id: Number(institutionId) },
+      include: { Fees: { where: { currentlyActive: true } } }
+    });
+    if (!institution) {
       return res.status(404).json({ ok: false, message: 'Institution not found' });
     }
-    res.status(200).json(fees);
+    res.status(200).json(institution.Fees);
   } catch (err) {
     next(err);
   }
@@ -20,11 +22,10 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
 
 export async function simulateFeePayment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { institutionId, type, classModality, numberOfStudents, duration } = req.body;
+    const { fees, type, classModality, numberOfStudents, duration } = req.body;
 
-    const fees = await getActiveInstitutionFees(Number(institutionId));
-    if (!fees) {
-      return res.status(404).json({ ok: false, message: 'Institution not found' });
+    if (!fees || !Array.isArray(fees)) {
+      return res.status(400).json({ ok: false, message: 'Fees list is required' });
     }
 
     const fee = findFeeByCriteria(fees, type, classModality, Number(numberOfStudents));
@@ -32,8 +33,7 @@ export async function simulateFeePayment(req: Request, res: Response, next: Next
       return res.status(404).json({ ok: false, message: 'Fee not found' });
     }
 
-    const durationInHours = convertDurationToHours(duration);
-    const simulatedFeePayment = calculateFeeAmount(fee, durationInHours);
+    const simulatedFeePayment = calculateFeeAmount(fee, Number(duration));
 
     res.status(200).json(simulatedFeePayment);
   } catch (err) {
@@ -45,15 +45,6 @@ export async function simulateFeePayment(req: Request, res: Response, next: Next
 // #################### UTILITY FUNCTIONS #####################
 // ############################################################
 
-async function getActiveInstitutionFees(institutionId: number) {
-  const institution = await prisma.institution.findUnique({
-    where: { id: institutionId },
-    include: { Fees: { where: { currentlyActive: true } } }
-  });
-  return institution?.Fees || null;
-}
-
-// Get a specific fee
 function findFeeByCriteria(
   fees: Fee[],
   type: string,
@@ -68,22 +59,12 @@ function findFeeByCriteria(
   );
 }
 
-// Convert hours:minutes format to decimal hours
-// TO DO: Adapt this to the format given by frontend
-function convertDurationToHours(duration: string): number {
-  const [hours, minutes] = duration.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) {
-    throw new Error('Invalid duration format. Expected format: hours:minutes (e.g., "1:30")');
-  }
-  return hours + minutes / 60;
-}
-
 function calculateFeeAmount(
   fee: Fee,
-  durationInHours: number
+  duration: number
 ) {
   return {
-    amountToPay: fee.amountToPay * durationInHours,
-    amountToCharge: fee.amountToCharge * durationInHours
+    amountToPay: fee.amountToPay * Number(duration)/60,
+    amountToCharge: fee.amountToCharge * Number(duration)/60
   };
 }

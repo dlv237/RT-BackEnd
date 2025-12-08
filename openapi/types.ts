@@ -132,6 +132,70 @@ export interface paths {
       };
     };
   };
+  "/fees/{institutionId}": {
+    /** Get all active fees from an institution */
+    get: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      responses: {
+        /** @description List of active fees */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Fee"][];
+          };
+        };
+        /** @description Institution not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  "/fees/simulate": {
+    /** Simulate a fee payment given a custom duration */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["SimulateFeePaymentRequest"];
+        };
+      };
+      responses: {
+        /** @description Simulated fee payment */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SimulateFeePaymentResponse"];
+          };
+        };
+        /** @description Bad request - fees list is required */
+        400: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Fee not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
   "/institutions": {
     /** Get all institutions */
     get: {
@@ -452,6 +516,34 @@ export interface components {
       phone: string | null;
       chargeEmail?: string | null;
       address?: string | null;
+    };
+    Fee: {
+      id: number;
+      type: string;
+      /** @enum {string} */
+      classModality: "inPerson" | "online" | "cancelled";
+      numberOfStudents: number;
+      amountToPay: number;
+      amountToCharge: number;
+      institutionId: number;
+      currentlyActive: boolean;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    SimulateFeePaymentRequest: {
+      fees: components["schemas"]["Fee"][];
+      type: string;
+      /** @enum {string} */
+      classModality: "inPerson" | "online" | "cancelled";
+      numberOfStudents: number;
+      /** @description Duration in minutes */
+      duration: number;
+    };
+    SimulateFeePaymentResponse: {
+      amountToPay: number;
+      amountToCharge: number;
     };
   };
   responses: never;

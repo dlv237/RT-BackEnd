@@ -224,6 +224,64 @@ const options: swaggerJSDoc.Options = {
             address: { type: 'string', nullable: true }
           },
           required: ['name', 'phone', 'rut']
+        },
+        Fee: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            type: { type: 'string' },
+            classModality: { 
+              type: 'string', 
+              enum: ['inPerson', 'online', 'cancelled'] 
+            },
+            numberOfStudents: { type: 'integer' },
+            amountToPay: { type: 'integer' },
+            amountToCharge: { type: 'integer' },
+            institutionId: { type: 'integer' },
+            currentlyActive: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          },
+          required: [
+            'id',
+            'type',
+            'classModality',
+            'numberOfStudents',
+            'amountToPay',
+            'amountToCharge',
+            'institutionId',
+            'currentlyActive',
+            'createdAt',
+            'updatedAt'
+          ]
+        },
+        SimulateFeePaymentRequest: {
+          type: 'object',
+          properties: {
+            fees: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Fee' }
+            },
+            type: { type: 'string' },
+            classModality: { 
+              type: 'string', 
+              enum: ['inPerson', 'online', 'cancelled'] 
+            },
+            numberOfStudents: { type: 'integer' },
+            duration: { 
+              type: 'integer',
+              description: 'Duration in minutes'
+            }
+          },
+          required: ['fees', 'type', 'classModality', 'numberOfStudents', 'duration']
+        },
+        SimulateFeePaymentResponse: {
+          type: 'object',
+          properties: {
+            amountToPay: { type: 'number' },
+            amountToCharge: { type: 'number' }
+          },
+          required: ['amountToPay', 'amountToCharge']
         }
       }
     }

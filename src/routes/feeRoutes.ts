@@ -12,8 +12,10 @@ const router = Router();
  *     parameters:
  *       - in: path
  *         name: institutionId
+ *         required: true
  *         schema:
  *           type: integer
+ *         description: Institution ID
  *     responses:
  *       200:
  *         description: List of active fees
@@ -22,7 +24,18 @@ const router = Router();
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Institution/Fees'
+ *                 $ref: '#/components/schemas/Fee'
+ *       404:
+ *         description: Institution not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  */
 router.get('/:institutionId', getFees);
 
@@ -37,30 +50,36 @@ router.get('/:institutionId', getFees);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               institutionId:
- *                 type: integer
- *               type:
- *                 type: string
- *               classModality:
- *                 type: string
- *               numberOfStudents:
- *                 type: integer
- *               duration:
- *                 type: string
+ *             $ref: '#/components/schemas/SimulateFeePaymentRequest'
  *     responses:
  *       200:
  *         description: Simulated fee payment
  *         content:
  *           application/json:
  *             schema:
+ *               $ref: '#/components/schemas/SimulateFeePaymentResponse'
+ *       400:
+ *         description: Bad request - fees list is required
+ *         content:
+ *           application/json:
+ *             schema:
  *               type: object
  *               properties:
- *                 amountToPay:
- *                   type: number
- *                 amountToCharge:
- *                   type: number
+ *                 ok:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Fee not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
  */
 router.post('/simulate', simulateFeePayment);
 
