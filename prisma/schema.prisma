@@ -113,7 +113,7 @@ model Class {
   institutionId Int
   studentId     Int
   tutorId       Int
-  ClassPayment ClassPayment
+  ClassPayment  ClassPayment?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -129,16 +129,16 @@ model Class {
 model ClassPayment {
   id                      Int           @id @default(autoincrement())
   classId                 Int
-  guardianAmount     Int
+  guardianAmount          Int           
   guardianPaymentStatus   PaymentStatus @default(pending)
   guardianPaymentType             PaymentType   @default(bankTransfer)
-  tutorAmount        Int
+  tutorAmount             Int
   tutorPaymentStatus      PaymentStatus @default(pending)
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
-  
-  Class                   Class         @relation(fields: [classId], references: [id])
 
+  Class                   Class         @relation(fields: [classId], references: [id])
+  
   @@unique([classId])
   @@index([createdAt])
 }
@@ -146,13 +146,12 @@ model ClassPayment {
 
 model Fee {
   id                Int      @id @default(autoincrement())
-  type              String
+  type              ClassType
   classModality     ClassModality
-  numberOfStudents  Int
-  tutorAmount       Int
-  guardianAmount    Int
+  numberOfStudents  Int      @default(1)
+  tutorAmount       Int      @default(0)
+  guardianAmount    Int      @default(0)
   institutionId     Int
-  currentlyActive   Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -174,6 +173,8 @@ model Institution {
   CoordinatorPayments CoordinatorPayment[]
   GuardianTutors      GuardianTutor[]
   Students            Student[]
+
+  coordinatorProfitShares CoordinatorProfitShare[]
 }
 
 model GuardianTutor {
@@ -233,6 +234,8 @@ model User {
   @@index([role])
   @@index([institutionId])
   @@index([institutionId, role])
+  coordinatorPayments CoordinatorPayment[]
+  coordinatorProfitShares CoordinatorProfitShare[]
 }
 
 model UserBankAccount {
@@ -242,7 +245,7 @@ model UserBankAccount {
   accountType    AccountType
   accountNumber  String
   accountEmail   String
-  rut      String
+  rut            String   @default("")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
