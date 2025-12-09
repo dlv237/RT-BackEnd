@@ -172,11 +172,31 @@ const options: swaggerJSDoc.Options = {
                 },
                 TutorLinks: { 
                   type: 'array', 
-                  items: { $ref: '#/components/schemas/ParentTutor' } 
+                  items: { 
+                    allOf: [
+                      { $ref: '#/components/schemas/ParentTutor' },
+                      {
+                        type: 'object',
+                        properties: {
+                          Parent: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  } 
                 },
                 ParentLinks: { 
                   type: 'array', 
-                  items: { $ref: '#/components/schemas/ParentTutor' } 
+                  items: { 
+                    allOf: [
+                      { $ref: '#/components/schemas/ParentTutor' },
+                      {
+                        type: 'object',
+                        properties: {
+                          Tutor: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  } 
                 }
               }
             }

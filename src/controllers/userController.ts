@@ -152,8 +152,16 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
         Institution: true,
         BankAccount: true,
         Students: true,
-        TutorLinks: true,
-        ParentLinks: true
+        TutorLinks: {
+          include: {
+            Parent: true
+          }
+        },
+        ParentLinks: {
+          include: {
+            Tutor: true
+          }
+        },
         // note: hashedPassword is omitted intentionally to exclude it
       }
     })

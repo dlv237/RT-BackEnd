@@ -424,13 +424,17 @@ export interface components {
       /** Format: date-time */
       updatedAt?: string;
     };
-    UserDetail: components["schemas"]["User"] & {
+    UserDetail: components["schemas"]["User"] & ({
       Institution?: components["schemas"]["Institution"];
       BankAccount?: components["schemas"]["UserBankAccount"];
       Students?: components["schemas"]["Student"][];
-      TutorLinks?: components["schemas"]["ParentTutor"][];
-      ParentLinks?: components["schemas"]["ParentTutor"][];
-    };
+      TutorLinks?: (components["schemas"]["ParentTutor"] & {
+          Parent?: components["schemas"]["User"];
+        })[];
+      ParentLinks?: (components["schemas"]["ParentTutor"] & {
+          Tutor?: components["schemas"]["User"];
+        })[];
+    });
     UserBankAccountInput: {
       bankName: string;
       accountType: string;
