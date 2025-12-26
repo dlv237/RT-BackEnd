@@ -383,6 +383,44 @@ export interface paths {
       };
     };
   };
+  "/users/{id}/change-password": {
+    /** Change a user's password */
+    patch: {
+      parameters: {
+        path: {
+          /** @description User ID */
+          id: string;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": {
+            currentPassword: string;
+            newPassword: string;
+          };
+        };
+      };
+      responses: {
+        /** @description Password updated successfully */
+        200: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Current password is incorrect */
+        401: {
+          content: never;
+        };
+        /** @description User not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
@@ -462,7 +500,7 @@ export interface components {
       userId?: number;
       bankName?: string;
       /** @enum {string} */
-      accountType?: "ahorro" | "corriente" | "vista";
+      accountType?: "AHORRO" | "CORRIENTE" | "VISTA";
       accountNumber?: string;
       /** Format: email */
       accountEmail?: string;
