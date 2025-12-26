@@ -250,27 +250,25 @@ const options: swaggerJSDoc.Options = {
           properties: {
             id: { type: 'integer' },
             type: { type: 'string' },
-            classModality: { 
+            modality: { 
               type: 'string', 
               enum: ['inPerson', 'online', 'cancelled'] 
             },
             numberOfStudents: { type: 'integer' },
-            amountToPay: { type: 'integer' },
-            amountToCharge: { type: 'integer' },
+            guardianAmount: { type: 'integer' },
+            tutorAmount: { type: 'integer' },
             institutionId: { type: 'integer' },
-            currentlyActive: { type: 'boolean' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           },
           required: [
             'id',
             'type',
-            'classModality',
+            'modality',
             'numberOfStudents',
-            'amountToPay',
-            'amountToCharge',
+            'guardianAmount',
+            'tutorAmount',
             'institutionId',
-            'currentlyActive',
             'createdAt',
             'updatedAt'
           ]
@@ -298,10 +296,10 @@ const options: swaggerJSDoc.Options = {
         SimulateFeePaymentResponse: {
           type: 'object',
           properties: {
-            amountToPay: { type: 'number' },
-            amountToCharge: { type: 'number' }
+            ok: { type: 'boolean' },
+            result: { type: 'number' }
           },
-          required: ['amountToPay', 'amountToCharge']
+          required: ['ok', 'result']
         }
       }
     }

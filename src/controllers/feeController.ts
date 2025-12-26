@@ -7,14 +7,10 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params;
 
-    const institution = await prisma.institution.findUnique({
-      where: { id: Number(institutionId) },
-      include: { Fees: { where: { currentlyActive: true } } }
+    const fees = await prisma.fee.findMany({
+      where: { institutionId: Number(institutionId) }
     });
-    if (!institution) {
-      return res.status(404).json({ ok: false, message: 'Institution not found' });
-    }
-    res.status(200).json(institution.Fees);
+    res.status(200).json(fees);
   } catch (err) {
     next(err);
   }
@@ -23,6 +19,8 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
 export async function simulateFeePayment(req: Request, res: Response, next: NextFunction) {
   try {
     const { fees, type, classModality, numberOfStudents, duration } = req.body;
+
+    const userRole = (req as any).auth?.role;
 
     if (!fees || !Array.isArray(fees)) {
       return res.status(400).json({ ok: false, message: 'Fees list is required' });
@@ -35,7 +33,18 @@ export async function simulateFeePayment(req: Request, res: Response, next: Next
 
     const simulatedFeePayment = calculateFeeAmount(fee, Number(duration));
 
-    res.status(200).json(simulatedFeePayment);
+    if (userRole === 'guardian') {
+      const result = simulatedFeePayment.guardianAmount
+      res.status(200).json({ ok: true, result });
+    } 
+    else if (userRole === 'tutor') {
+      const result = simulatedFeePayment.tutorAmount
+      res.status(200).json({ ok: true, result });
+    }
+    else {
+      const result = simulatedFeePayment.tutorAmount
+      res.status(200).json({ ok: true, result });
+    }
   } catch (err) {
     next(err);
   }
@@ -54,8 +63,8 @@ function findFeeByCriteria(
   return fees.find(
     fee =>
       fee.type === type &&
-      fee.classModality === classModality &&
-      fee.studentNumber === numberOfStudents
+      fee.modality === classModality &&
+      fee.numberOfStudents === numberOfStudents
   );
 }
 
@@ -64,7 +73,7 @@ function calculateFeeAmount(
   duration: number
 ) {
   return {
-    amountToPay: fee.amountToPay * Number(duration)/60,
-    amountToCharge: fee.amountToCharge * Number(duration)/60
+    guardianAmount: fee.guardianAmount * Number(duration)/60,
+    tutorAmount: fee.tutorAmount * Number(duration)/60
   };
 }

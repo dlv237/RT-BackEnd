@@ -525,12 +525,11 @@ export interface components {
       id: number;
       type: string;
       /** @enum {string} */
-      classModality: "inPerson" | "online" | "cancelled";
+      modality: "inPerson" | "online" | "cancelled";
       numberOfStudents: number;
-      amountToPay: number;
-      amountToCharge: number;
+      guardianAmount: number;
+      tutorAmount: number;
       institutionId: number;
-      currentlyActive: boolean;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -546,8 +545,8 @@ export interface components {
       duration: number;
     };
     SimulateFeePaymentResponse: {
-      amountToPay: number;
-      amountToCharge: number;
+      ok: boolean;
+      result: number;
     };
   };
   responses: never;

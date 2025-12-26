@@ -15,5 +15,5 @@ export function setRoutes(app: Express) {
   app.use(requireAuth)
   app.use('/users', userRoutes)
   app.use('/institutions', authorize(['admin', "coordinator"]), institutionRoutes)
-  app.use('/fees', authorize(['admin', 'coordinator', 'tutor', 'parent']), feeRoutes)
+  app.use('/fees', authorize(['admin', 'coordinator', 'tutor','guardian']), feeRoutes)
 }
