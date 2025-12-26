@@ -147,6 +147,45 @@ const options: swaggerJSDoc.Options = {
             institutionId: { type: 'integer' }
           }
         },
+        StudentSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' }
+          },
+          required: ['id', 'name']
+        },
+        TutorSummary: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' }
+          },
+          required: ['name']
+        },
+        GuardianLinkWithTutor: {
+          type: 'object',
+          properties: {
+            tutorId: { type: 'integer' },
+            Tutor: { $ref: '#/components/schemas/TutorSummary' }
+          },
+          required: ['tutorId', 'Tutor']
+        },
+        UserWithGuardianLinks: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            Students: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/StudentSummary' }
+            },
+            GuardianLinks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/GuardianLinkWithTutor' }
+            }
+          },
+          required: ['id', 'name', 'Students', 'GuardianLinks']
+        },
         GuardianTutor: {
           type: 'object',
           properties: {

@@ -1,6 +1,10 @@
 // routes/institutionRoutes.ts
 import { Router } from 'express';
-import { createInstitution, getInstitutions } from '../controllers/institutionController';
+import { 
+  createInstitution, 
+  getInstitutions,
+  getGuardiansFromInstitution
+} from '../controllers/institutionController';
 const router = Router();
 
 /**
@@ -41,4 +45,28 @@ router.post('/', createInstitution);
  *                 $ref: '#/components/schemas/Institution'
  */
 router.get('/', getInstitutions);
+/**
+ * @openapi
+ * /institutions/{institutionId}/guardians:
+ *   get:
+ *     summary: Get guardians from an institution
+ *     tags: [Institutions]
+ *     parameters:
+ *       - in: path
+ *         name: institutionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Institution ID
+ *     responses:
+ *       200:
+ *         description: List of guardians
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UserWithGuardianLinks'
+ */
+router.get('/:institutionId/guardians', getGuardiansFromInstitution);
 export default router;
