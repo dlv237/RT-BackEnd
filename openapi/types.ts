@@ -584,7 +584,7 @@ export interface components {
     };
     SimulateFeePaymentResponse: {
       ok: boolean;
-      result: number;
+      result: number | { guardianAmount: number; tutorAmount: number };
     };
   };
   responses: never;

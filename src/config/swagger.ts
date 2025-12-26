@@ -297,7 +297,19 @@ const options: swaggerJSDoc.Options = {
           type: 'object',
           properties: {
             ok: { type: 'boolean' },
-            result: { type: 'number' }
+            result: {
+              oneOf: [
+                { type: 'number' },
+                {
+                  type: 'object',
+                  properties: {
+                    guardianAmount: { type: 'number' },
+                    tutorAmount: { type: 'number' }
+                  },
+                  required: ['guardianAmount', 'tutorAmount']
+                }
+              ]
+            }
           },
           required: ['ok', 'result']
         }

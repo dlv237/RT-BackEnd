@@ -6,12 +6,40 @@ import { Fee } from '@prisma/client';
 export async function getFees(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params;
+    const userRole = (req as any).auth?.role;
 
     const fees = await prisma.fee.findMany({
       where: { institutionId: Number(institutionId) }
     });
     const translatedFees = translateFees(fees);
-    res.status(200).json(translatedFees);
+
+    if (userRole === 'guardian') {
+      // Return type, modality, numberOfStudents, guardianAmount
+      const result = translatedFees.map(fee => ({
+        type: fee.type,
+        modality: fee.modality,
+        numberOfStudents: fee.numberOfStudents,
+        guardianAmount: fee.guardianAmount
+      }));
+      res.status(200).json(result);
+    }
+    else if (userRole === 'tutor') {
+      // Return type, modality, numberOfStudents, tutorAmount
+      const result = translatedFees.map(fee => ({
+        type: fee.type,
+        modality: fee.modality,
+        numberOfStudents: fee.numberOfStudents,
+        tutorAmount: fee.tutorAmount
+      }));
+      res.status(200).json(result);
+    }
+    else if (userRole === 'coordinator' || userRole === 'admin') {
+      // Return everything
+      res.status(200).json(translatedFees);
+    }
+    else {
+      return res.status(403).json({ ok: false, message: 'Forbidden' });
+    }
   } catch (err) {
     next(err);
   }
@@ -43,7 +71,7 @@ export async function simulateFeePayment(req: Request, res: Response, next: Next
       res.status(200).json({ ok: true, result });
     }
     else {
-      const result = simulatedFeePayment.tutorAmount
+      const result = simulatedFeePayment
       res.status(200).json({ ok: true, result });
     }
   } catch (err) {
