@@ -10,7 +10,8 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
     const fees = await prisma.fee.findMany({
       where: { institutionId: Number(institutionId) }
     });
-    res.status(200).json(fees);
+    const translatedFees = translateFees(fees);
+    res.status(200).json(translatedFees);
   } catch (err) {
     next(err);
   }
@@ -76,4 +77,36 @@ function calculateFeeAmount(
     guardianAmount: fee.guardianAmount * Number(duration)/60,
     tutorAmount: fee.tutorAmount * Number(duration)/60
   };
+}
+
+function translateFees(fees: Fee[]) {
+  return fees.map(fee => ({
+    ...fee,
+    modality: translateModality(fee.modality),
+    type: translateType(fee.type)
+  }));
+}
+
+function translateModality(modality: string): string {
+  switch (modality) {
+    case 'inPerson':
+      return 'Presencial';
+    case 'online':
+      return 'Online';
+    default:
+      return modality;
+  }
+}
+
+function translateType(type: string): string {
+  switch (type) {
+    case 'school':
+      return 'Escolar';
+    case 'university':
+      return 'Universitaria';
+    case 'cancelled':
+      return 'Cancelada';
+    default:
+      return type;
+  }
 }
