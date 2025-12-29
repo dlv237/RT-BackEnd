@@ -275,6 +275,43 @@ export interface paths {
       };
     };
   };
+  "/institutions/search": {
+    /** Search institutions by name */
+    get: {
+      parameters: {
+        query: {
+          /** @description Search query to match institution names */
+          query: string;
+        };
+      };
+      responses: {
+        /** @description List of institutions matching the search query */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Institution"][];
+          };
+        };
+        /** @description Bad request - search query is required */
+        400: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Forbidden - admin access required */
+        403: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
   "/mail": {
     /** Send email */
     post: {
