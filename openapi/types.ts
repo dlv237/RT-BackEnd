@@ -303,6 +303,111 @@ export interface paths {
         /** @description Forbidden */
         403: {
           content: never;
+  "/fees/{institutionId}": {
+    /** Get all active fees from an institution */
+    get: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      responses: {
+        /** @description List of active fees */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Fee"][];
+          };
+        };
+        /** @description Institution not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  "/fees/edit": {
+    /** Edit fees */
+    put: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["EditFeesRequest"];
+        };
+      };
+      responses: {
+        /** @description Fees updated successfully */
+        200: {
+          content: {
+            "application/json": components["schemas"]["EditFeesResponse"];
+          };
+        };
+        /** @description Bad request - validation error */
+        400: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Forbidden - admin access required */
+        403: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description One or more fees not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  "/fees/simulate": {
+    /** Simulate a fee payment given a custom duration */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["SimulateFeePaymentRequest"];
+        };
+      };
+      responses: {
+        /** @description Simulated fee payment */
+        200: {
+          content: {
+            "application/json": components["schemas"]["SimulateFeePaymentResponse"];
+          };
+        };
+        /** @description Bad request - fees list is required */
+        400: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Fee not found */
+        404: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
         };
       };
     };
@@ -350,6 +455,38 @@ export interface paths {
         200: {
           content: {
             "application/json": components["schemas"]["UserWithGuardianLinks"][];
+  "/institutions/search": {
+    /** Search institutions by name */
+    get: {
+      parameters: {
+        query: {
+          /** @description Search query to match institution names */
+          query: string;
+        };
+      };
+      responses: {
+        /** @description List of institutions matching the search query */
+        200: {
+          content: {
+            "application/json": components["schemas"]["Institution"][];
+          };
+        };
+        /** @description Bad request - search query is required */
+        400: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
+          };
+        };
+        /** @description Forbidden - admin access required */
+        403: {
+          content: {
+            "application/json": {
+              ok?: boolean;
+              message?: string;
+            };
           };
         };
       };
@@ -854,6 +991,51 @@ export interface components {
       phone: string | null;
       chargeEmail?: string | null;
       address?: string | null;
+    };
+    Fee: {
+      id: number;
+      type: string;
+      /** @enum {string} */
+      modality: "inPerson" | "online" | "cancelled";
+      numberOfStudents: number;
+      guardianAmount: number;
+      tutorAmount: number;
+      institutionId: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    SimulateFeePaymentRequest: {
+      fees: components["schemas"]["Fee"][];
+      type: string;
+      /** @enum {string} */
+      classModality: "inPerson" | "online" | "cancelled";
+      numberOfStudents: number;
+      /** @description Duration in minutes */
+      duration: number;
+    };
+    SimulateFeePaymentResponse: {
+      ok: boolean;
+      result: OneOf<[number, {
+        guardianAmount: number;
+        tutorAmount: number;
+      }]>;
+    };
+    EditFeesRequest: {
+      /** @description Array of fees to update. Can also be a single fee object for backward compatibility. */
+      fees: {
+          /** @description Fee ID to update */
+          feeId: number;
+          /** @description New tutor amount */
+          tutorAmount: number;
+          /** @description New guardian amount */
+          guardianAmount: number;
+        }[];
+    };
+    EditFeesResponse: {
+      ok: boolean;
+      message: string;
     };
   };
   responses: never;
