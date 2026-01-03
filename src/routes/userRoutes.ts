@@ -120,7 +120,7 @@ router.delete('/:id', deleteUser)
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UserDetail'
+ *               $ref: '#/components/schemas/UserByIdResponse'
  *       404:
  *         description: User not found
  */

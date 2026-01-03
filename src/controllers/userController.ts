@@ -175,7 +175,27 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
         message: 'User not found.'
       });
     }
-    res.json(user)
+
+    const response = { ...user } as typeof user & { coordinatorProfitShare?: number }
+
+    if (user.role === 'coordinator' && user.institutionId) {
+      const profit = await prisma.coordinatorProfitShare.findUnique({
+        where: {
+          coordinatorId_institutionId: {
+            coordinatorId: Number(user.id),
+            institutionId: Number(user.institutionId)
+          }
+        },
+        select: {
+          profitShare: true
+        }
+      })
+      if (profit) {
+        response.coordinatorProfitShare = Number(profit.profitShare)
+      }
+    }
+
+    res.json(response)
   } catch (err) {
     next(err)
   }

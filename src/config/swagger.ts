@@ -527,11 +527,20 @@ const options: swaggerJSDoc.Options = {
           ]
         },
         UserByIdResponse: {
-          type: 'object',
-          properties: {
-            ok: { type: 'boolean' },
-            user: { $ref: '#/components/schemas/UserWithInstitution' }
-          }
+          description: 'UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator.',
+          allOf: [
+            { $ref: '#/components/schemas/UserDetail' },
+            {
+              type: 'object',
+              properties: {
+                coordinatorProfitShare: { 
+                  type: 'number', 
+                  nullable: true,
+                  description: 'Profit share percentage for coordinator users. Only present when user role is coordinator.'
+                }
+              }
+            }
+          ]
         },
         EditUserPersonalInformationInput: {
           type: 'object',
