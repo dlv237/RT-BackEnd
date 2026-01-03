@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import { UserRole } from '@prisma/client';
-import { userInfo } from 'os';
 
 export async function createInstitution(req: Request, res: Response, next: NextFunction) {
   try {
@@ -58,6 +57,11 @@ export async function getGuardiansFromInstitution(req: Request, res: Response, n
       }
     })
     res.json(guardians);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function deleteInstitution(req: Request, res: Response, next: NextFunction) {
   try {
     console.log('TODO: delete institution');

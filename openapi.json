@@ -1052,7 +1052,6 @@
           "rut"
         ]
       },
-
       "ChangePasswordRequest": {
         "type": "object",
         "properties": {
@@ -1590,27 +1589,11 @@
               "maximum": 100
             },
             "description": "Items per page. If provided with page, enables pagination."
-    "/fees/{institutionId}": {
-      "get": {
-        "summary": "Get all active fees from an institution",
-        "tags": [
-          "Fees"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "institutionId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Institution ID"
           }
         ],
         "responses": {
           "200": {
             "description": "Array of class details",
-            "description": "List of active fees",
             "content": {
               "application/json": {
                 "schema": {
@@ -1739,6 +1722,59 @@
               "type": "integer"
             }
           }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClassPaymentStatusInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated ClassPayment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassPayment"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/fees/{institutionId}": {
+      "get": {
+        "summary": "Get all active fees from an institution",
+        "tags": [
+          "Fees"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "institutionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Institution ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of active fees",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
                     "$ref": "#/components/schemas/Fee"
                   }
                 }
@@ -1861,7 +1897,6 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateClassPaymentStatusInput"
                 "$ref": "#/components/schemas/SimulateFeePaymentRequest"
               }
             }
@@ -1869,17 +1904,6 @@
         },
         "responses": {
           "200": {
-            "description": "Updated ClassPayment",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClassPayment"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden"
             "description": "Simulated fee payment",
             "content": {
               "application/json": {
@@ -1982,6 +2006,27 @@
     "/institutions/{institutionId}/guardians": {
       "get": {
         "summary": "Get guardians from an institution",
+        "tags": [
+          "Institutions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "institutionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Institution ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of guardian"
+          }
+        }
+      }
+    },
     "/institutions/search": {
       "get": {
         "summary": "Search institutions by name",
@@ -1990,28 +2035,23 @@
         ],
         "parameters": [
           {
-            "in": "path",
-            "name": "institutionId",
             "in": "query",
             "name": "query",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "Institution ID"
             "description": "Search query to match institution names"
           }
         ],
         "responses": {
           "200": {
-            "description": "List of guardians",
             "description": "List of institutions matching the search query",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UserWithGuardianLinks"
                     "$ref": "#/components/schemas/Institution"
                   }
                 }

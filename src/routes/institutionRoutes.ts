@@ -3,7 +3,6 @@ import { Router } from 'express';
 
 import { 
   createInstitution,
-  deleteInstitution,
   getInstitutions,
   searchInstitutions,
   getGuardiansFromInstitution
@@ -90,8 +89,6 @@ router.get('/:institutionId/guardians', getGuardiansFromInstitution);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/UserWithGuardianLinks'
- *
  *                 $ref: '#/components/schemas/Institution'
  *       400:
  *         description: Bad request - search query is required
