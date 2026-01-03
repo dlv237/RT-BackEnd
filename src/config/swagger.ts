@@ -253,7 +253,7 @@ const options: swaggerJSDoc.Options = {
             accountEmail: { type: 'string', format: 'email' },
             accountName: { type: 'string' }
           },
-          required: ['userId', 'bankName', 'accountType', 'accountNumber', 'rut', 'accountEmail', 'accountName']
+          required: ['bankName', 'accountType', 'accountNumber', 'rut', 'accountEmail', 'accountName']
         },
 
         ClassSubject: {
@@ -543,6 +543,14 @@ const options: swaggerJSDoc.Options = {
             address: { type: 'string', nullable: true }
           },
           required: ['name', 'phone', 'rut']
+        },
+        ChangePasswordRequest: {
+          type: 'object',
+          properties: {
+            currentPassword: { type: 'string' },
+            newPassword: { type: 'string' },
+          },
+          required: ['currentPassword', 'newPassword'],
         },
         Fee: {
           type: 'object',
