@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client"
+import { UserRole, PaymentStatus } from "@prisma/client"
 import { Request, Response, NextFunction } from "express"
 import prisma from "../lib/prisma"
 
@@ -80,6 +80,576 @@ export async function createClass(req: Request, res: Response, next: NextFunctio
 
     
 
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getClassesCashFlowSummary(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = (req as any).auth.role as UserRole
+    const { 
+      startDate,
+      endDate,
+      tutorId,
+      studentId,
+    } = req.query
+
+    // Guardian
+    if (role === UserRole.guardian) {
+      const guardianId = (req as any).auth.uid
+      const institutionId = (req as any).auth.institutionId
+      
+      const pendingAmount = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Student: {
+              guardianId: guardianId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            studentId: studentId ? Number(studentId) : undefined,
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            institutionId: institutionId
+          }
+        }
+      })
+
+      const paidAmount = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.completed,
+          Class: {
+            Student: {
+              guardianId: guardianId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            studentId: studentId ? Number(studentId) : undefined,
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            institutionId: institutionId
+          }
+        }
+      })
+
+      return res.json({
+        pendingAmount: pendingAmount._sum.guardianAmount || 0,
+        paidAmount: paidAmount._sum.guardianAmount || 0
+      })
+    }
+
+    // Tutor
+    if (role === UserRole.tutor){
+      const tutorId = (req as any).auth.uid
+      const institutionId = (req as any).auth.institutionId
+
+      const pendingAmount = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.pending,
+          Class: {
+            tutorId: tutorId,
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            studentId: studentId ? Number(studentId) : undefined,
+            institutionId: institutionId
+          }
+        }
+      })
+
+      const paidAmount = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.completed,
+          Class: {
+            tutorId: tutorId,
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            studentId: studentId ? Number(studentId) : undefined,
+            institutionId: institutionId
+          }
+        }
+      })
+
+      return res.json({
+        pendingAmount: pendingAmount._sum.tutorAmount || 0,
+        paidAmount: paidAmount._sum.tutorAmount || 0
+      })
+    }
+    // Coordinator
+    if (role === UserRole.coordinator) {
+      const institutionId = (req as any).auth.institutionId
+
+      const pendingIncomes = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Institution: {
+              id: institutionId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const receivedIncomes = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.completed,
+          Class: {
+            Institution: {
+              id: institutionId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const pendingExpenses = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Institution: {
+              id: institutionId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const paidExpenses = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.completed,
+          Class: {
+            Institution: {
+              id: institutionId
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new  Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      return res.json({
+        pendingIncomes: pendingIncomes._sum.guardianAmount || 0,
+        receivedIncomes: receivedIncomes._sum.guardianAmount || 0,
+        pendingExpenses: pendingExpenses._sum.tutorAmount || 0,
+        paidExpenses: paidExpenses._sum.tutorAmount || 0
+      })
+    }
+    // Admin
+    if (role === UserRole.admin) {
+      const { institutionId } = req.query
+      
+      const pendingIncomes = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Institution: {
+              id: Number(institutionId)
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const receivedIncomes = await prisma.classPayment.aggregate({
+        _sum: {
+          guardianAmount: true
+        },
+        where: {
+          guardianPaymentStatus: PaymentStatus.completed,
+          Class: {
+            Institution: {
+              id: Number(institutionId)
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const pendingExpenses = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Institution: {
+              id: Number(institutionId)
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      const paidExpenses = await prisma.classPayment.aggregate({
+        _sum: {
+          tutorAmount: true
+        },
+        where: {
+          tutorPaymentStatus: PaymentStatus.completed,
+          Class: {
+            Institution: {
+              id: Number(institutionId)
+            },
+            date: {
+              gte: startDate ? new Date(startDate as string) : undefined,
+              lte: endDate ? new  Date(endDate as string) : undefined,
+            },
+            tutorId: tutorId ? Number(tutorId) : undefined,
+            studentId: studentId ? Number(studentId) : undefined,
+          }
+        }
+      })
+
+      return res.json({
+        pendingIncomes: pendingIncomes._sum.guardianAmount || 0,
+        receivedIncomes: receivedIncomes._sum.guardianAmount || 0,
+        pendingExpenses: pendingExpenses._sum.tutorAmount || 0,
+        paidExpenses: paidExpenses._sum.tutorAmount || 0
+      })
+    }
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getClassesDetails(req: Request, res: Response, next: NextFunction) {
+  try {
+    const role = (req as any).auth.role as UserRole
+    const { 
+      startDate,
+      endDate,
+      tutorId,
+      studentId,
+      page,
+      pageSize
+    } = req.query
+
+    // Guardian
+    if (role === UserRole.guardian) {
+      const guardianId = (req as any).auth.uid
+      const institutionId = (req as any).auth.institutionId
+      
+      const classes = await prisma.class.findMany({
+        where: {
+          Student: {
+            guardianId: guardianId
+          },
+          date: {
+            gte: startDate ? new Date(startDate as string) : undefined,
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
+          studentId: studentId ? Number(studentId) : undefined,
+          tutorId: tutorId ? Number(tutorId) : undefined,
+          institutionId: institutionId
+        },
+        skip: page && pageSize ? (Number(page) - 1) * Number(pageSize) : undefined,
+        take: pageSize ? Number(pageSize) : undefined,
+        include: {
+          ClassPayment: true,
+          Tutor: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          Student: {
+            select: {
+              id: true,
+              name: true,
+              Guardian: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          Institution: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      })
+
+      return res.json(classes)
+    }
+
+    // Tutor
+    if (role === UserRole.tutor){
+      const tutorId = (req as any).auth.uid
+      const institutionId = (req as any).auth.institutionId
+
+      const classes = await prisma.class.findMany({
+        where: {
+          tutorId: tutorId,
+          date: {
+            gte: startDate ? new Date(startDate as string) : undefined,
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
+          studentId: studentId ? Number(studentId) : undefined,
+          institutionId: institutionId
+        },
+        skip: page && pageSize ? (Number(page) - 1) * Number(pageSize) : 0,
+        take: pageSize ? Number(pageSize) : 10,
+        include: {
+          ClassPayment: true,
+          Tutor: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          Student: {
+            select: {
+              id: true,
+              name: true,
+              Guardian: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          Institution: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      })
+
+      return res.json(classes)
+    }
+    // Coordinator
+    if (role === UserRole.coordinator) {
+      const institutionId = (req as any).auth.institutionId
+
+      const classes = await prisma.class.findMany({
+        where: {
+          Institution: {
+            id: institutionId
+          },
+          date: {
+            gte: startDate ? new Date(startDate as string) : undefined,
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
+          tutorId: tutorId ? Number(tutorId) : undefined,
+          studentId: studentId ? Number(studentId) : undefined,
+        },
+        skip: page && pageSize ? (Number(page) - 1) * Number(pageSize) : undefined,
+        take: pageSize ? Number(pageSize) : undefined,
+        include: {
+          ClassPayment: true,
+          Tutor: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          Student: {
+            select: {
+              id: true,
+              name: true,
+              Guardian: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          Institution: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      })
+
+      return res.json(classes)
+
+    }
+    // Admin
+    if (role === UserRole.admin) {
+      const { institutionId } = req.query
+      
+      const classes = await prisma.class.findMany({
+        where: {
+          Institution: {
+            id: Number(institutionId)
+          },
+          date: {
+            gte: startDate ? new Date(startDate as string) : undefined,
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
+          tutorId: tutorId ? Number(tutorId) : undefined,
+          studentId: studentId ? Number(studentId) : undefined,
+        },
+        skip: page && pageSize ? (Number(page) - 1) * Number(pageSize) : undefined,
+        take: pageSize ? Number(pageSize) : undefined,
+        include: {
+          ClassPayment: true,
+          Tutor: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          Student: {
+            select: {
+              id: true,
+              name: true,
+              Guardian: {
+                select: {
+                  id: true,
+                  name: true,
+                }
+              }
+            }
+          },
+          Institution: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      })
+
+      return res.json(classes)
+    }
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function deleteClass(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { classId } = req.params
+
+    await prisma.classPayment.deleteMany({
+      where: {
+        classId: Number(classId)
+      }
+    })
+
+    await prisma.class.delete({
+      where: {
+        id: Number(classId)
+      }
+    })
+
+    res.status(204).send()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateClassPaymentStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { classPaymentId } = req.params
+    const { 
+      guardianPaymentStatus,
+      tutorPaymentStatus
+    } = req.body
+
+    const updatedClassPayment = await prisma.classPayment.update({
+      where: {
+        id: Number(classPaymentId)
+      },
+      data: {
+        guardianPaymentStatus,
+        tutorPaymentStatus
+      }
+    })
+
+    res.json(updatedClassPayment)
   } catch (err) {
     next(err)
   }

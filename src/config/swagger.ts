@@ -410,6 +410,108 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['class', 'classPayment']
         },
+
+        ClassesCashFlowSummaryAmounts: {
+          type: 'object',
+          properties: {
+            pendingAmount: { type: 'integer', description: 'Pending amount for the authenticated role' },
+            paidAmount: { type: 'integer', description: 'Paid amount for the authenticated role' }
+          },
+          required: ['pendingAmount', 'paidAmount']
+        },
+        ClassesCashFlowSummaryInstitution: {
+          type: 'object',
+          properties: {
+            pendingIncomes: { type: 'integer', description: 'Pending guardian incomes (institution scope)' },
+            receivedIncomes: { type: 'integer', description: 'Received guardian incomes (institution scope)' },
+            pendingExpenses: { type: 'integer', description: 'Pending tutor expenses (institution scope)' },
+            paidExpenses: { type: 'integer', description: 'Paid tutor expenses (institution scope)' }
+          },
+          required: ['pendingIncomes', 'receivedIncomes', 'pendingExpenses', 'paidExpenses']
+        },
+        ClassesCashFlowSummaryResponse: {
+          description: 'Cash-flow summary. Shape depends on authenticated role (guardian/tutor vs coordinator/admin).',
+          oneOf: [
+            { $ref: '#/components/schemas/ClassesCashFlowSummaryAmounts' },
+            { $ref: '#/components/schemas/ClassesCashFlowSummaryInstitution' }
+          ]
+        },
+
+        UserIdName: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' }
+          },
+          required: ['id', 'name']
+        },
+        StudentWithGuardianSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            Guardian: { $ref: '#/components/schemas/UserIdName' }
+          },
+          required: ['id', 'name', 'Guardian']
+        },
+        InstitutionSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' }
+          },
+          required: ['id', 'name']
+        },
+        TutorBrief: {
+          allOf: [
+            { $ref: '#/components/schemas/UserIdName' }
+          ],
+          description: 'Tutor basic info (id and name)'
+        },
+        ClassDetails: {
+          description: 'Class with included relations: ClassPayment, Tutor, Student (with Guardian), Institution.',
+          allOf: [
+            { $ref: '#/components/schemas/Class' },
+            {
+              type: 'object',
+              properties: {
+                ClassPayment: { $ref: '#/components/schemas/ClassPayment', nullable: true },
+                Tutor: { $ref: '#/components/schemas/TutorBrief' },
+                Student: { $ref: '#/components/schemas/StudentWithGuardianSummary' },
+                Institution: { $ref: '#/components/schemas/InstitutionSummary' }
+              },
+              required: ['Tutor', 'Student', 'Institution']
+            }
+          ]
+        },
+
+        UpdateClassPaymentStatusInput: {
+          description: 'Provide at least one of guardianPaymentStatus or tutorPaymentStatus.',
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                guardianPaymentStatus: { $ref: '#/components/schemas/PaymentStatus' }
+              },
+              required: ['guardianPaymentStatus']
+            },
+            {
+              type: 'object',
+              properties: {
+                tutorPaymentStatus: { $ref: '#/components/schemas/PaymentStatus' }
+              },
+              required: ['tutorPaymentStatus']
+            },
+            {
+              type: 'object',
+              properties: {
+                guardianPaymentStatus: { $ref: '#/components/schemas/PaymentStatus' },
+                tutorPaymentStatus: { $ref: '#/components/schemas/PaymentStatus' }
+              },
+              required: ['guardianPaymentStatus', 'tutorPaymentStatus']
+            }
+          ]
+        },
         CreateUserWithBankAccountInput: {
           allOf: [
             { $ref: '#/components/schemas/UserInput' },
