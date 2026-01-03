@@ -1029,15 +1029,22 @@
         ]
       },
       "UserByIdResponse": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
+        "description": "UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserDetail"
           },
-          "user": {
-            "$ref": "#/components/schemas/UserWithInstitution"
+          {
+            "type": "object",
+            "properties": {
+              "coordinatorProfitShare": {
+                "type": "number",
+                "nullable": true,
+                "description": "Profit share percentage for coordinator users. Only present when user role is coordinator."
+              }
+            }
           }
-        }
+        ]
       },
       "EditUserPersonalInformationInput": {
         "type": "object",
@@ -2300,7 +2307,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDetail"
+                  "$ref": "#/components/schemas/UserByIdResponse"
                 }
               }
             }

@@ -576,7 +576,7 @@ export interface paths {
         /** @description User found */
         200: {
           content: {
-            "application/json": components["schemas"]["UserDetail"];
+            "application/json": components["schemas"]["UserByIdResponse"];
           };
         };
         /** @description User not found */
@@ -988,10 +988,11 @@ export interface components {
     CreateUserWithBankAccountInput: components["schemas"]["UserInput"] & ({
       BankAccount?: components["schemas"]["UserBankAccountInput"] | null;
     });
-    UserByIdResponse: {
-      ok?: boolean;
-      user?: components["schemas"]["UserWithInstitution"];
-    };
+    /** @description UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator. */
+    UserByIdResponse: components["schemas"]["UserDetail"] & ({
+      /** @description Profit share percentage for coordinator users. Only present when user role is coordinator. */
+      coordinatorProfitShare?: number | null;
+    });
     EditUserPersonalInformationInput: {
       name: string;
       rut: string | null;
