@@ -698,6 +698,39 @@ const options: swaggerJSDoc.Options = {
             guardian: { $ref: '#/components/schemas/User' }
           },
           required: ['ok', 'guardian']
+        },
+        AddStudentToGuardianRequest: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Student name (required)' },
+            institutionId: { type: 'integer', description: 'Institution ID (required)' },
+            guardianId: { type: 'integer', description: 'Guardian ID (required)' }
+          },
+          required: ['name', 'institutionId', 'guardianId']
+        },
+        AddStudentToGuardianResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            student: { $ref: '#/components/schemas/Student' }
+          },
+          required: ['ok', 'student']
+        },
+        RemoveStudentFromGuardianRequest: {
+          type: 'object',
+          properties: {
+            guardianId: { type: 'integer', description: 'Guardian ID (required)' },
+            studentId: { type: 'integer', description: 'Student ID (required)' }
+          },
+          required: ['guardianId', 'studentId']
+        },
+        RemoveStudentFromGuardianResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' }
+          },
+          required: ['ok', 'message']
         }
       }
     }
