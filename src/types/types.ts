@@ -416,6 +416,39 @@ export interface paths {
       };
     };
   };
+  "/guardians/create": {
+    /**
+     * Create a new guardian
+     * @description Create a new guardian user in the system.
+     * - Admins must provide the institution ID
+     * - Coordinators automatically use their own institution
+     * - Requires authentication with admin or coordinator role
+     * - Initial password is set to the RUT number without the verifying digit
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateGuardianInput"];
+        };
+      };
+      responses: {
+        /** @description Guardian created successfully */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateGuardianResponse"];
+          };
+        };
+        /** @description Invalid input or validation error */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden - user is not an admin or coordinator */
+        403: {
+          content: never;
+        };
+      };
+    };
+  };
   "/institutions": {
     /** Get all institutions */
     get: {
@@ -546,7 +579,15 @@ export interface paths {
         };
       };
     };
-    /** Create a user */
+    /**
+     * Create a user
+     * @description Create a new user in the system.
+     * - Admins must provide the institution ID
+     * - Coordinators automatically use their own institution
+     * - Initial password is set to the RUT number without the verifying digit
+     * - Email must be unique
+     * - Phone, address, and chargeEmail are optional
+     */
     post: {
       requestBody: {
         content: {
@@ -554,11 +595,19 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Created user */
+        /** @description User created successfully */
         201: {
           content: {
             "application/json": components["schemas"]["User"];
           };
+        };
+        /** @description Invalid input or validation error (missing required fields, invalid email format, institution not found, email already exists) */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden - insufficient permissions */
+        403: {
+          content: never;
         };
       };
     };
@@ -585,7 +634,12 @@ export interface paths {
         };
       };
     };
-    /** Delete a user by ID */
+    /**
+     * Delete a user by ID
+     * @description Soft delete a user by marking them as inactive (isActive = false).
+     * - Admins and coordinators can delete users
+     * - Coordinators cannot delete admin or coordinator users
+     */
     delete: {
       parameters: {
         path: {
@@ -594,8 +648,16 @@ export interface paths {
         };
       };
       responses: {
-        /** @description User deleted successfully */
+        /** @description User deleted successfully (soft delete) */
         204: {
+          content: never;
+        };
+        /** @description Forbidden - user lacks permission to delete this user */
+        403: {
+          content: never;
+        };
+        /** @description User not found */
+        404: {
           content: never;
         };
       };
@@ -764,15 +826,30 @@ export interface components {
       updatedAt: string;
     };
     UserInput: {
+      /** @description User full name (required) */
       name: string;
-      /** Format: email */
+      /**
+       * Format: email
+       * @description User email (must be unique, required)
+       */
       email: string;
-      /** @enum {string} */
+      /**
+       * @description User role (required)
+       * @enum {string}
+       */
       role: "admin" | "coordinator" | "tutor" | "guardian";
-      rut?: string | null;
+      /** @description RUT in format XX.XXX.XXX-K (required, used to generate initial password) */
+      rut: string;
+      /** @description Phone number (optional) */
       phone?: string | null;
+      /** @description Address (optional) */
       address?: string | null;
+      /**
+       * Format: email
+       * @description Charge email (optional)
+       */
       chargeEmail?: string | null;
+      /** @description Institution ID (required for non-admin users, inferred for coordinators) */
       institutionId?: number | null;
     };
     Institution: {
@@ -1048,6 +1125,32 @@ export interface components {
     EditFeesResponse: {
       ok: boolean;
       message: string;
+    };
+    CreateGuardianInput: {
+      /** @description Guardian name */
+      name: string;
+      /**
+       * Format: email
+       * @description Guardian email
+       */
+      email: string;
+      /** @description Guardian RUT (e.g., 12345678-9) */
+      rut: string;
+      /** @description Guardian phone number (optional) */
+      phone?: string | null;
+      /** @description Guardian address (optional) */
+      address?: string | null;
+      /**
+       * Format: email
+       * @description Charge email (optional)
+       */
+      chargeEmail?: string | null;
+      /** @description Institution ID (required for admin, inferred for coordinator) */
+      institution?: number;
+    };
+    CreateGuardianResponse: {
+      ok: boolean;
+      guardian: components["schemas"]["User"];
     };
   };
   responses: never;
