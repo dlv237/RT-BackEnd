@@ -19,7 +19,7 @@ export async function addStudentToGuardian(req: Request, res: Response, next: Ne
     const { name, institutionId, guardianId } = req.body;
     const userRole = (req as any).auth?.role;
 
-    if (userRole !== 'admin' || userRole !== 'coordinator') {
+    if (userRole !== 'admin' && userRole !== 'coordinator') {
       return res.status(403).json({ ok: false, message: 'Forbidden' });
     }
 
@@ -91,7 +91,7 @@ export async function removeStudentFromGuardian(req: Request, res: Response, nex
       return res.status(404).json({ ok: false, message: 'Student not found for the specified guardian' });
     }
 
-    // Soft Delete - mark student as deleted or remove the record
+    // TODO: check if we delete or do a soft delete
     await prisma.student.delete({
       where: { id: studentId }
     });
@@ -108,7 +108,7 @@ export async function getStudentsByGuardianId(req: Request, res: Response, next:
     const { guardianId } = req.params;
     const userRole = (req as any).auth?.role;
 
-    if (userRole !== 'admin' || userRole !== 'coordinator') {
+    if (userRole !== 'admin' && userRole !== 'coordinator') {
       return res.status(403).json({ ok: false, message: 'Forbidden' });
     }
 

@@ -17,6 +17,7 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
 
     const users = await prisma.user.findMany({
       where: {
+        isActive: true,
         role: role as UserRole | undefined,
         institutionId: institutionId ? Number(institutionId) : undefined,
         OR: nameOrEmail ? [
@@ -35,6 +36,7 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
     next(err)
   }
 }
+
 export async function createUser(req: Request, res: Response, next: NextFunction) {
   try {
     const { 
