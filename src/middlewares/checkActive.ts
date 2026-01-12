@@ -1,25 +1,24 @@
 import { Request, Response, NextFunction } from 'express'
 import prisma from '../lib/prisma'
 
-/**
- * Middleware to check if an authenticated user is active (isActive === true)
- */
 export async function checkActive(req: Request, res: Response, next: NextFunction) {
   try {
     const auth = (req as any).auth
     
-    // If no auth info, let other middleware handle it
     if (!auth || !auth.sub) {
       return next()
     }
 
-    // For Swagger dev mock, skip the check
     if (auth.sub === 'swagger-dev') {
       return next()
     }
+    const userId = (auth as any).uid
+    if (!userId || typeof userId !== 'number' || userId <= 0) {
+      return res.status(401).json({ ok: false, message: 'Invalid user ID' })
+    }
 
     const user = await prisma.user.findUnique({
-      where: { id: Number(auth.sub) },
+      where: { id: userId },
       select: { isActive: true }
     })
 
