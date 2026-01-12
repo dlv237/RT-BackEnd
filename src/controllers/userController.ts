@@ -70,10 +70,10 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       })
     }
 
-    if (role === 'parent' && BankAccount) {
+    if (role === 'guardian' && BankAccount) {
       return res.status(400).json({
         ok: false,
-        message: 'Parent users cannot have bank account information.'
+        message: 'Guardian users cannot have bank account information.'
       })
     }
 

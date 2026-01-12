@@ -2174,7 +2174,7 @@
                 "admin",
                 "coordinator",
                 "tutor",
-                "parent"
+                "guardian"
               ]
             },
             "description": "Filter by user role"
