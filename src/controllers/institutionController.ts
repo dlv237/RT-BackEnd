@@ -1,17 +1,52 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
-import { UserRole } from '@prisma/client';
+import { UserRole, ClassType, ClassModality } from '@prisma/client';
+
+const BASE_FEES = [
+  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 1 },
+  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 1 },
+  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 2 },
+  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 2 },
+  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 3 },
+  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 3 },
+
+  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 1 },
+  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 1 },
+  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 2 },
+  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 2 },
+  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 3 },
+  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 3 },
+
+  { type: ClassType.cancelled, modality: ClassModality.online, numberOfStudents: 0 },
+  { type: ClassType.cancelled, modality: ClassModality.inPerson, numberOfStudents: 0 },
+];
 
 export async function createInstitution(req: Request, res: Response, next: NextFunction) {
   try {
     const { name } = req.body;
-    
-    const newInstitution = await prisma.institution.create({
-      data: {
-        name
-      }
+
+    const institution = await prisma.institution.create({
+      data: { name }
     });
-    res.status(201).json(newInstitution);
+
+    const feeData = BASE_FEES.map((fee) => ({
+      ...fee
+        }));
+
+    // Insert sequentially to avoid any sequence/id conflict issues.
+    for (const data of feeData) {
+      await prisma.fee.createMany
+      (
+        { data: { ...data, institutionId: institution.id }  }
+      );
+    }
+
+    const fees = await prisma.fee.findMany({
+      where: { institutionId: institution.id },
+      orderBy: [{ type: 'asc' }, { modality: 'asc' }, { numberOfStudents: 'asc' }],
+    });
+
+    res.status(201).json({ institution, fees });
   }
   catch (err) {
     next(err);

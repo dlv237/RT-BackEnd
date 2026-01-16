@@ -15,6 +15,7 @@ const router = Router();
  * /institutions:
  *   post:
  *     summary: Create an institution
+ *     description: Creates an institution and seeds default fee rows (all amounts set to 0) for every type/modality/student-count combination.
  *     tags: [Institutions]
  *     requestBody:
  *       required: true
