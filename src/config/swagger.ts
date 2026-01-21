@@ -114,6 +114,17 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['name']
         },
+        CreateInstitutionResponse: {
+          type: 'object',
+          properties: {
+            institution: { $ref: '#/components/schemas/Institution' },
+            fees: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/Fee' }
+            }
+          },
+          required: ['institution', 'fees']
+        },
         DeleteInstitutionResponse: {
           type: 'object',
           properties: {

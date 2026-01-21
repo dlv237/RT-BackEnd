@@ -17,7 +17,7 @@ const router = Router();
  * /institutions:
  *   post:
  *     summary: Create an institution
- *     description: Creates an institution and seeds default fee rows (all amounts set to 0) for every type/modality/student-count combination.
+ *     description: Creates an institution and clones fee rows from institution id=1 (The Grange School).
  *     tags: [Institutions]
  *     requestBody:
  *       required: true
@@ -31,7 +31,7 @@ const router = Router();
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Institution'
+ *               $ref: '#/components/schemas/CreateInstitutionResponse'
  */
 router.post('/', createInstitution);
 /**

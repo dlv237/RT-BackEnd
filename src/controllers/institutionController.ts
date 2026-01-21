@@ -2,25 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import { UserRole, ClassType, ClassModality } from '@prisma/client';
 
-const BASE_FEES = [
-  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 1 },
-  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 1 },
-  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 2 },
-  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 2 },
-  { type: ClassType.school, modality: ClassModality.online, numberOfStudents: 3 },
-  { type: ClassType.school, modality: ClassModality.inPerson, numberOfStudents: 3 },
-
-  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 1 },
-  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 1 },
-  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 2 },
-  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 2 },
-  { type: ClassType.university, modality: ClassModality.online, numberOfStudents: 3 },
-  { type: ClassType.university, modality: ClassModality.inPerson, numberOfStudents: 3 },
-
-  { type: ClassType.cancelled, modality: ClassModality.online, numberOfStudents: 0 },
-  { type: ClassType.cancelled, modality: ClassModality.inPerson, numberOfStudents: 0 },
-];
-
 export async function createInstitution(req: Request, res: Response, next: NextFunction) {
   try {
     const { name } = req.body;
@@ -29,16 +10,25 @@ export async function createInstitution(req: Request, res: Response, next: NextF
       data: { name }
     });
 
-    const feeData = BASE_FEES.map((fee) => ({
-      ...fee
-        }));
+    const baseFees = await prisma.fee.findMany({
+      where: { institutionId: 1 },
+      select: {
+        type: true,
+        modality: true,
+        numberOfStudents: true,
+        tutorAmount: true,
+        guardianAmount: true,
+      },
+      orderBy: [{ type: 'asc' }, { modality: 'asc' }, { numberOfStudents: 'asc' }],
+    });
 
-    // Insert sequentially to avoid any sequence/id conflict issues.
-    for (const data of feeData) {
-      await prisma.fee.createMany
-      (
-        { data: { ...data, institutionId: institution.id }  }
-      );
+    const feeData = baseFees.map((fee) => ({
+      ...fee,
+      institutionId: institution.id,
+    }));
+
+    if (feeData.length > 0) {
+      await prisma.fee.createMany({ data: feeData });
     }
 
     const fees = await prisma.fee.findMany({
