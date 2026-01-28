@@ -239,6 +239,18 @@ const options: swaggerJSDoc.Options = {
             }
           ]
         },
+        GuardianLink: {
+          type: 'object',
+          allOf: [
+            { $ref: '#/components/schemas/GuardianTutor' },
+            {
+              type: 'object',
+              properties: {
+                Tutor: { $ref: '#/components/schemas/User' }
+              }
+            }
+          ]
+        },
         UserDetail: {
           allOf: [
             { $ref: '#/components/schemas/User' },

@@ -8,7 +8,8 @@ import {
   editUserBankAccount,
   editUserPersonalInformation,
   changeUserPassword,
-  getTutorLinks
+  getTutorLinks,
+  getGuardianLinks
 } from '../controllers/userController'
 
 const router = Router()
@@ -271,4 +272,31 @@ router.patch('/:id/change-password', changeUserPassword)
  *         description: User not found
  */
 router.get('/:id/tutor-links', getTutorLinks)
+/**
+ * @openapi
+ * /users/{id}/guardian-links:
+ *   get:
+ *     summary: Get guardian links for a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Guardian links retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/GuardianLink'
+ *       404:
+ *         description: User not found
+ */
+router.get('/:id/guardian-links', getGuardianLinks)
+
 export default router;

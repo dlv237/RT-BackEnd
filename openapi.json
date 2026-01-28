@@ -520,6 +520,22 @@
           }
         ]
       },
+      "GuardianLink": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GuardianTutor"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Tutor": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        ]
+      },
       "UserDetail": {
         "allOf": [
           {
@@ -2983,6 +2999,43 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/TutorLink"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/{id}/guardian-links": {
+      "get": {
+        "summary": "Get guardian links for a user",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guardian links retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardianLink"
                   }
                 }
               }

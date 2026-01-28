@@ -422,3 +422,38 @@ export async function getTutorLinks(req: Request, res: Response, next: NextFunct
     next(err)
   }
 }
+
+export async function getGuardianLinks(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params
+
+    const guardianLinks = await prisma.guardianTutor.findMany({
+      where: { guardianId: Number(id) },
+      include: {
+        Tutor: {
+          select: {
+            id: true,
+            name: true,
+            Students: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!guardianLinks) {
+      return res.status(404).json({
+        ok: false,
+        message: 'No guardian links found for this guardian.'
+      })
+    }
+
+    res.json(guardianLinks)
+  } catch (err: PrismaClientKnownRequestError | any) {
+    next(err)
+  }
+}

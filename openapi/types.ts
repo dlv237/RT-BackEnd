@@ -957,6 +957,29 @@ export interface paths {
       };
     };
   };
+  "/users/{id}/guardian-links": {
+    /** Get guardian links for a user */
+    get: {
+      parameters: {
+        path: {
+          /** @description User ID */
+          id: string;
+        };
+      };
+      responses: {
+        /** @description Guardian links retrieved successfully */
+        200: {
+          content: {
+            "application/json": components["schemas"]["GuardianLink"][];
+          };
+        };
+        /** @description User not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
 }
 
 export type webhooks = Record<string, never>;
@@ -1111,6 +1134,9 @@ export interface components {
     };
     TutorLink: components["schemas"]["GuardianTutor"] & {
       Guardian?: components["schemas"]["User"];
+    };
+    GuardianLink: components["schemas"]["GuardianTutor"] & {
+      Tutor?: components["schemas"]["User"];
     };
     UserDetail: components["schemas"]["User"] & ({
       Institution?: components["schemas"]["Institution"];
