@@ -2499,7 +2499,7 @@
     "/students/{guardianId}": {
       "get": {
         "summary": "Get students by guardian ID",
-        "description": "Retrieve students associated with a specific guardian.\n- Admins/coordinators: returns all students\n- Guardians/tutors: returns only active students\n",
+        "description": "Retrieve students associated with a specific guardian.\n- Admins/coordinators: returns all students\n- Guardians: returns only active students for their own guardianId\n- Tutors: returns only active students when there is an active tutor-guardian link\n",
         "tags": [
           "Students"
         ],

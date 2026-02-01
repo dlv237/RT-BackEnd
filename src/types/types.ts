@@ -594,7 +594,8 @@ export interface paths {
      * Get students by guardian ID
      * @description Retrieve students associated with a specific guardian.
      * - Admins/coordinators: returns all students
-     * - Guardians/tutors: returns only active students
+     * - Guardians: returns only active students for their own guardianId
+     * - Tutors: returns only active students when there is an active tutor-guardian link
      */
     get: {
       parameters: {
