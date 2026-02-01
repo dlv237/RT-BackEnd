@@ -15,7 +15,7 @@ app.use(cors({
 	origin: true, // reflect request origin — allows all origins
 	credentials: true,
 	methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-	allowedHeaders: ['Content-Type', 'Authorization'],
+	allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token-In-Body'],
 }))
 app.use(cookieParser())
 app.use(express.json())
