@@ -22,15 +22,13 @@ enum AccountType {
 }
 
 enum ClassSubject {
-  biology
-  chemistry
-  physics
   mathematics
+  languages
+  physics
+  chemistry
+  biology
+  history
   spanish
-  french
-  english
-  pet
-  socialStudies
   studySkills
   other
 }
