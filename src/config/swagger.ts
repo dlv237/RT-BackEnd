@@ -141,6 +141,22 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        InstitutionDeletionOptionsResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            canHardDelete: { type: 'boolean' },
+          },
+          required: ['ok', 'canHardDelete'],
+        },
+        HardDeleteInstitutionResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
         ReactivateUserResponse: {
           type: 'object',
           properties: {

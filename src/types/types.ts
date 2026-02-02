@@ -515,7 +515,9 @@ export interface paths {
   "/institutions/{id}": {
     /**
      * Delete (deactivate) an institution
-     * @description Deletes an institution only if there are no pending class payments in the last 12 months and all coordinator payments for those months exist and are completed. Operation is a soft delete that deactivates the institution and its users.
+     * @description Soft delete an institution.
+     * - If the institution has no users, it can be deactivated immediately (no payment checks).
+     * - Otherwise, it can be deactivated only if there are no pending class payments in the last 12 months and all coordinator payments for those months exist and are completed.
      */
     delete: {
       parameters: {
@@ -563,6 +565,60 @@ export interface paths {
         404: {
           content: {
             "application/json": components["schemas"]["ReactivateInstitutionResponse"];
+          };
+        };
+      };
+    };
+  };
+  "/institutions/{id}/deletion-options": {
+    /**
+     * Get deletion options for an institution
+     * @description Returns whether the institution can be hard-deleted (no users associated).
+     */
+    get: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          id: number;
+        };
+      };
+      responses: {
+        /** @description Deletion options */
+        200: {
+          content: {
+            "application/json": components["schemas"]["InstitutionDeletionOptionsResponse"];
+          };
+        };
+        /** @description Invalid institution id */
+        400: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/institutions/{id}/hard-delete": {
+    /**
+     * Permanently delete an institution
+     * @description Hard-delete an institution only if it has no users associated.
+     */
+    delete: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          id: number;
+        };
+      };
+      responses: {
+        /** @description Institution deleted permanently */
+        200: {
+          content: {
+            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
+          };
+        };
+        /** @description Cannot hard-delete institution */
+        400: {
+          content: {
+            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
           };
         };
       };
@@ -1131,6 +1187,14 @@ export interface components {
       message: string;
     };
     ReactivateInstitutionResponse: {
+      ok: boolean;
+      message: string;
+    };
+    InstitutionDeletionOptionsResponse: {
+      ok: boolean;
+      canHardDelete: boolean;
+    };
+    HardDeleteInstitutionResponse: {
       ok: boolean;
       message: string;
     };
