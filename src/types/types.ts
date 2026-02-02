@@ -784,10 +784,16 @@ export interface paths {
         };
       };
       responses: {
+        /** @description User reactivated instead of created */
+        200: {
+          content: {
+            "application/json": components["schemas"]["CreateUserResponse"];
+          };
+        };
         /** @description User created successfully */
         201: {
           content: {
-            "application/json": components["schemas"]["User"];
+            "application/json": components["schemas"]["CreateUserResponse"];
           };
         };
         /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
@@ -1339,6 +1345,11 @@ export interface components {
     CreateUserWithBankAccountInput: components["schemas"]["UserInput"] & ({
       BankAccount?: components["schemas"]["UserBankAccountInput"] | null;
     });
+    CreateUserResponse: {
+      ok: boolean;
+      reactivated: boolean;
+      user: components["schemas"]["User"];
+    };
     /** @description UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator. */
     UserByIdResponse: components["schemas"]["UserDetail"] & ({
       /** @description Profit share percentage for coordinator users. Only present when user role is coordinator. */

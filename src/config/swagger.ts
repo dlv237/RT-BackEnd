@@ -588,6 +588,15 @@ const options: swaggerJSDoc.Options = {
             }
           ]
         },
+        CreateUserResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            reactivated: { type: 'boolean' },
+            user: { $ref: '#/components/schemas/User' }
+          },
+          required: ['ok', 'reactivated', 'user']
+        },
         UserByIdResponse: {
           description: 'UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator.',
           allOf: [
