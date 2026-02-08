@@ -831,6 +831,7 @@ export interface paths {
      * - Coordinators automatically use their own institution
      * - Initial password is set to the RUT number without the verifying digit
      * - Email must be unique (database constraint)
+     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
      * - Phone, address, and chargeEmail are optional
      */
     post: {
@@ -840,12 +841,6 @@ export interface paths {
         };
       };
       responses: {
-        /** @description User reactivated instead of created */
-        200: {
-          content: {
-            "application/json": components["schemas"]["CreateUserResponse"];
-          };
-        };
         /** @description User created successfully */
         201: {
           content: {
@@ -1408,10 +1403,11 @@ export interface components {
     }]>;
     CreateUserWithBankAccountInput: components["schemas"]["UserInput"] & ({
       BankAccount?: components["schemas"]["UserBankAccountInput"] | null;
+      /** @description Profit share percentage for coordinator users. Defaults to 30 when omitted. */
+      coordinatorProfitShare?: number | null;
     });
     CreateUserResponse: {
       ok: boolean;
-      reactivated: boolean;
       user: components["schemas"]["User"];
     };
     /** @description UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator. */

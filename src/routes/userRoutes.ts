@@ -80,6 +80,7 @@ router.get('/', getUsers)
  *       - Coordinators automatically use their own institution
  *       - Initial password is set to the RUT number without the verifying digit
  *       - Email must be unique (database constraint)
+ *       - For coordinators, coordinatorProfitShare defaults to 30% if not provided
  *       - Phone, address, and chargeEmail are optional
  *     tags: [Users]
  *     requestBody:
@@ -91,12 +92,6 @@ router.get('/', getUsers)
  *     responses:
  *       201:
  *         description: User created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/CreateUserResponse'
- *       200:
- *         description: User reactivated instead of created
  *         content:
  *           application/json:
  *             schema:

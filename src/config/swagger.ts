@@ -599,6 +599,11 @@ const options: swaggerJSDoc.Options = {
                 BankAccount: {
                   allOf: [{ $ref: '#/components/schemas/UserBankAccountInput' }],
                   nullable: true
+                },
+                coordinatorProfitShare: {
+                  type: 'number',
+                  nullable: true,
+                  description: 'Profit share percentage for coordinator users. Defaults to 30 when omitted.'
                 }
               }
             }
@@ -608,10 +613,9 @@ const options: swaggerJSDoc.Options = {
           type: 'object',
           properties: {
             ok: { type: 'boolean' },
-            reactivated: { type: 'boolean' },
             user: { $ref: '#/components/schemas/User' }
           },
-          required: ['ok', 'reactivated', 'user']
+          required: ['ok', 'user']
         },
         UserByIdResponse: {
           description: 'UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator.',

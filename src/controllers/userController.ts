@@ -51,7 +51,8 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       address,
       chargeEmail,
       institutionId,
-      BankAccount
+      BankAccount,
+      coordinatorProfitShare
     } = req.body
 
     const userRole = (req as any).auth?.role;
@@ -100,7 +101,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       }
     }
 
-
+    // Condiciones para cada rol
     if (role !== 'admin' && institutionId == null) {
       return res.status(400).json({
         ok: false,
@@ -115,6 +116,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       })
     }
 
+    // Asignar un institutionId para el apoderado, el del coordinador que lo creo o el dado por el admin.
     let finalInstitutionId: number = institutionId;
 
     if (userRole === 'coordinator') {
@@ -135,35 +137,14 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, isActive: true, rut: true }
+      select: { id: true, isActive: true }
     })
 
     if (existingUser) {
       if (existingUser.isActive) {
         return res.status(400).json({ ok: false, message: 'Email already exists' })
       }
-
-      const existingPassword = existingUser.rut
-        ? String(existingUser.rut).split('-')[0].replace(/\D/g, '')
-        : undefined
-
-      if (!existingPassword) {
-        return res.status(400).json({
-          ok: false,
-          message: 'Existing RUT not provided or invalid, cannot generate password.'
-        })
-      }
-
-      const resetHashedPassword = await argon2.hash(existingPassword, {
-        secret: Buffer.from(process.env.ARGON2_SECRET_PEPPER || '', 'base64')
-      })
-
-      const reactivatedUser = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { isActive: true, hashedPassword: resetHashedPassword }
-      })
-
-      return res.status(200).json({ ok: true, reactivated: true, user: reactivatedUser })
+      return res.status(400).json({ ok: false, message: 'Ese correo esta desactivado' })
     }
 
     const hashedPassword = await argon2.hash(password, {
@@ -184,30 +165,68 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       }
     })
 
+    if (role === 'coordinator') {
+      const resolvedProfitShare = coordinatorProfitShare == null ? 30 : Number(coordinatorProfitShare)
+
+      await prisma.coordinatorProfitShare.create({
+        data: {
+          coordinatorId: newUser.id,
+          institutionId: finalInstitutionId,
+          profitShare: resolvedProfitShare
+        }
+      })
+    }
+
     if (BankAccount) {
       const {
         bankName,
         accountType,
         accountNumber,
         rutHolder,
+        rut: bankRut,
         accountEmail,
         accountName
       } = BankAccount
+
+      if (!bankName || typeof bankName !== 'string' || bankName.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Bank name is required.' })
+      }
+
+      if (!accountType || !Object.values(AccountType).includes(accountType as AccountType)) {
+        return res.status(400).json({ ok: false, message: 'Invalid account type.' })
+      }
+
+      if (!accountNumber || typeof accountNumber !== 'string' || accountNumber.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account number is required.' })
+      }
+
+      if (!accountName || typeof accountName !== 'string' || accountName.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account name is required.' })
+      }
+
+      if (!accountEmail || typeof accountEmail !== 'string' || accountEmail.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account email is required.' })
+      }
+
+      const bankRutValue = rutHolder || bankRut || rut
+      if (!bankRutValue || typeof bankRutValue !== 'string' || bankRutValue.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account RUT is required.' })
+      }
 
       await prisma.userBankAccount.create({
         data: {
           userId: newUser.id,
           bankName,
-          accountType,
+          accountType: accountType as AccountType,
           accountNumber,
           accountName,
-          rut: rutHolder || rut,
-          accountEmail: accountEmail || email
+          rut: bankRutValue,
+          accountEmail
         }
       });
     }
     // Then: Send email with credentials (omitted for now)
-    res.status(201).json({ ok: true, reactivated: false, user: newUser })
+    res.status(201).json({ ok: true, user: newUser })
   } catch (err) {
     next(err)
   }

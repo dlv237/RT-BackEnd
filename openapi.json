@@ -1149,6 +1149,11 @@
                   }
                 ],
                 "nullable": true
+              },
+              "coordinatorProfitShare": {
+                "type": "number",
+                "nullable": true,
+                "description": "Profit share percentage for coordinator users. Defaults to 30 when omitted."
               }
             }
           }
@@ -1160,16 +1165,12 @@
           "ok": {
             "type": "boolean"
           },
-          "reactivated": {
-            "type": "boolean"
-          },
           "user": {
             "$ref": "#/components/schemas/User"
           }
         },
         "required": [
           "ok",
-          "reactivated",
           "user"
         ]
       },
@@ -2902,7 +2903,7 @@
       },
       "post": {
         "summary": "Create a user",
-        "description": "Create a new user in the system.\n- Admins must provide the institution ID\n- Coordinators automatically use their own institution\n- Initial password is set to the RUT number without the verifying digit\n- Email must be unique (database constraint)\n- Phone, address, and chargeEmail are optional\n",
+        "description": "Create a new user in the system.\n- Admins must provide the institution ID\n- Coordinators automatically use their own institution\n- Initial password is set to the RUT number without the verifying digit\n- Email must be unique (database constraint)\n- For coordinators, coordinatorProfitShare defaults to 30% if not provided\n- Phone, address, and chargeEmail are optional\n",
         "tags": [
           "Users"
         ],
@@ -2917,16 +2918,6 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "User reactivated instead of created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateUserResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "User created successfully",
             "content": {
