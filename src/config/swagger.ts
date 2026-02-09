@@ -165,6 +165,14 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        DeleteUserBlockedResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
         UserWithInstitution: {
           allOf: [
             { $ref: '#/components/schemas/User' },

@@ -902,6 +902,12 @@ export interface paths {
         204: {
           content: never;
         };
+        /** @description Cannot delete due to pending payments */
+        400: {
+          content: {
+            "application/json": components["schemas"]["DeleteUserBlockedResponse"];
+          };
+        };
         /** @description Forbidden - user lacks permission to delete this user */
         403: {
           content: never;
@@ -1194,6 +1200,10 @@ export interface components {
       message: string;
     };
     ReactivateUserResponse: {
+      ok: boolean;
+      message: string;
+    };
+    DeleteUserBlockedResponse: {
       ok: boolean;
       message: string;
     };

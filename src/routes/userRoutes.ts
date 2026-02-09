@@ -122,6 +122,12 @@ router.post('/', createUser)
  *     responses:
  *       204:
  *         description: User deleted successfully (soft delete)
+ *       400:
+ *         description: Cannot delete due to pending payments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DeleteUserBlockedResponse'
  *       403:
  *         description: Forbidden - user lacks permission to delete this user
  *       404:

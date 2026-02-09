@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import argon2 from 'argon2';
-import { AccountType, PrismaClient, UserRole } from '@prisma/client';
+import { AccountType, PaymentStatus, PrismaClient, UserRole } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export async function getUsers(_req: Request, res: Response, next: NextFunction) {
@@ -241,8 +241,6 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       return res.status(403).json({ ok: false, message: 'Forbidden' })
     } */
     
-    
-    
     const userId = Number(id)
     const user = await prisma.user.findUnique({ where: { id: userId } })
 
@@ -256,6 +254,28 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
 
     if (user.role === 'coordinator' && userRole !== 'admin') {
       return res.status(403).json({ ok: false, message: 'Only admins can deactivate coordinators.' })
+    }
+
+    // Solo eliminar si no hay pagos pendientes (apoderado)
+    if (user.role === 'guardian') {
+      const pendingPayment = await prisma.classPayment.findFirst({
+        where: {
+          guardianPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Student: {
+              guardianId: userId
+            }
+          }
+        },
+        select: { id: true }
+      })
+
+      if (pendingPayment) {
+        return res.status(400).json({
+          ok: false,
+          message: 'No se puede eliminar un usuario con pagos pendientes'
+        })
+      }
     }
 
     await prisma.user.update({
