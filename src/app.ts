@@ -7,7 +7,6 @@ import errorHandler from './middlewares/errorHandler'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './config/swagger'
 import cookieParser from 'cookie-parser'
-import { startUserCleanupJob } from './services/userCleanup'
 
 const app = express()
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000
@@ -53,8 +52,6 @@ app.use(errorHandler)
 const server = app.listen(PORT, () => {
 	console.log(`🚀 Server running on http://localhost:${PORT}!`)
 })
-
-startUserCleanupJob()
 
 const shutdown = (signal: string) => {
 	console.log(`\n${signal} received. Shutting down...`)
