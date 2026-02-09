@@ -350,6 +350,41 @@ export interface paths {
       };
     };
   };
+  "/coordinators/{institutionId}/payments": {
+    /**
+     * Create a coordinator payment
+     * @description Creates a payment marked as completed for the current month.
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateCoordinatorPaymentInput"];
+        };
+      };
+      responses: {
+        /** @description Coordinator payment created */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateCoordinatorPaymentResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+      };
+    };
+  };
   "/fees/{institutionId}": {
     /** Get all active fees from an institution */
     get: {
@@ -1250,6 +1285,15 @@ export interface components {
       ok: boolean;
       message: string;
     };
+    CreateCoordinatorPaymentInput: {
+      coordinatorId: number;
+      amount: number;
+    };
+    CreateCoordinatorPaymentResponse: {
+      ok: boolean;
+      message: string;
+      payment: components["schemas"]["CoordinatorPayment"];
+    };
     DeleteUserBlockedResponse: {
       ok: boolean;
       message: string;
@@ -1272,6 +1316,19 @@ export interface components {
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
+    };
+    CoordinatorPayment: {
+      id: number;
+      coordinatorId: number;
+      institutionId: number;
+      periodYear: number;
+      periodMonth: number;
+      amount: number;
+      status: components["schemas"]["PaymentStatus"];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
     Student: {
       id?: number;

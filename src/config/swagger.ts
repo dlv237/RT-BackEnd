@@ -181,6 +181,23 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        CreateCoordinatorPaymentInput: {
+          type: 'object',
+          properties: {
+            coordinatorId: { type: 'integer' },
+            amount: { type: 'number' },
+          },
+          required: ['coordinatorId', 'amount'],
+        },
+        CreateCoordinatorPaymentResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+            payment: { $ref: '#/components/schemas/CoordinatorPayment' },
+          },
+          required: ['ok', 'message', 'payment'],
+        },
         DeleteUserBlockedResponse: {
           type: 'object',
           properties: {
@@ -214,6 +231,31 @@ const options: swaggerJSDoc.Options = {
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }
+        },
+        CoordinatorPayment: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            coordinatorId: { type: 'integer' },
+            institutionId: { type: 'integer' },
+            periodYear: { type: 'integer' },
+            periodMonth: { type: 'integer' },
+            amount: { type: 'integer' },
+            status: { $ref: '#/components/schemas/PaymentStatus' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+          required: [
+            'id',
+            'coordinatorId',
+            'institutionId',
+            'periodYear',
+            'periodMonth',
+            'amount',
+            'status',
+            'createdAt',
+            'updatedAt',
+          ],
         },
         Student: {
           type: 'object',
