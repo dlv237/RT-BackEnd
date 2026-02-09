@@ -311,6 +311,45 @@ export interface paths {
       };
     };
   };
+  "/coordinators/{institutionId}/profit-share": {
+    /**
+     * Edit coordinator profit share
+     * @description Updates the profit share for a coordinator in a specific institution.
+     */
+    patch: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["EditCoordinatorProfitShareInput"];
+        };
+      };
+      responses: {
+        /** @description Coordinator profit share updated */
+        200: {
+          content: {
+            "application/json": components["schemas"]["EditCoordinatorProfitShareResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Coordinator profit share not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
   "/fees/{institutionId}": {
     /** Get all active fees from an institution */
     get: {
@@ -1200,6 +1239,14 @@ export interface components {
       message: string;
     };
     ReactivateUserResponse: {
+      ok: boolean;
+      message: string;
+    };
+    EditCoordinatorProfitShareInput: {
+      coordinatorId: number;
+      profitShare: number;
+    };
+    EditCoordinatorProfitShareResponse: {
       ok: boolean;
       message: string;
     };

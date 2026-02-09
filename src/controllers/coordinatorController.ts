@@ -15,17 +15,46 @@ export async function editCoordinatorProfitShare(req: Request, res: Response, ne
     if (typeof profitShare !== 'number' || profitShare < 0 || profitShare > 100) {
       return res.status(400).json({ ok: false, message: 'Profit share must be a number between 0 and 100' });
     }
+    
+    const parsedInstitutionId = Number(institutionId)
+    const parsedCoordinatorId = Number(coordinatorId)
 
-    if (coordinatorId === null || coordinatorId === undefined) {
+    if (!Number.isFinite(parsedInstitutionId)) {
+      return res.status(400).json({ ok: false, message: 'Institution ID is required' });
+    }
+
+    if (!Number.isFinite(parsedCoordinatorId)) {
       return res.status(400).json({ ok: false, message: 'Coordinator ID is required' });
     }
 
-    // Update the coordinator profit share
+    const existing = await prisma.coordinatorProfitShare.findUnique({
+      where: {
+        coordinatorId_institutionId: {
+          coordinatorId: parsedCoordinatorId,
+          institutionId: parsedInstitutionId,
+        },
+      },
+      select: { id: true },
+    })
+
+    if (!existing) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Coordinator profit share not found for this institution.',
+      })
+    }
 
     await prisma.coordinatorProfitShare.update({
-        where: { institutionId: Number(institutionId) },
-        data: { profitShare, coordinatorId },
-      });
+      where: {
+        coordinatorId_institutionId: {
+          coordinatorId: parsedCoordinatorId,
+          institutionId: parsedInstitutionId,
+        },
+      },
+      data: {
+        profitShare,
+      },
+    })
 
     res.status(200).json({ ok: true, message: 'Coordinator profit share updated successfully' });
   } catch (err) {

@@ -165,6 +165,22 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        EditCoordinatorProfitShareInput: {
+          type: 'object',
+          properties: {
+            coordinatorId: { type: 'integer' },
+            profitShare: { type: 'number' },
+          },
+          required: ['coordinatorId', 'profitShare'],
+        },
+        EditCoordinatorProfitShareResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
         DeleteUserBlockedResponse: {
           type: 'object',
           properties: {
