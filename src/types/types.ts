@@ -874,6 +874,39 @@ export interface paths {
       };
     };
   };
+  "/tutors/guardian-links": {
+    /**
+     * Create a guardian-tutor link
+     * @description Creates a GuardianTutor link.
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateGuardianTutorLinkInput"];
+        };
+      };
+      responses: {
+        /** @description Link created */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateGuardianTutorLinkResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Link already exists */
+        409: {
+          content: never;
+        };
+      };
+    };
+  };
   "/users": {
     /** List users */
     get: {
@@ -1304,6 +1337,15 @@ export interface components {
     ErrorResponse: {
       ok: boolean;
       message: string;
+    };
+    CreateGuardianTutorLinkInput: {
+      guardianId: number;
+      tutorId: number;
+      institutionId: number;
+    };
+    CreateGuardianTutorLinkResponse: {
+      ok: boolean;
+      link: components["schemas"]["GuardianTutor"];
     };
     DeleteUserBlockedResponse: {
       ok: boolean;

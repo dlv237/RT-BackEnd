@@ -206,6 +206,23 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        CreateGuardianTutorLinkInput: {
+          type: 'object',
+          properties: {
+            guardianId: { type: 'integer' },
+            tutorId: { type: 'integer' },
+            institutionId: { type: 'integer' },
+          },
+          required: ['guardianId', 'tutorId', 'institutionId'],
+        },
+        CreateGuardianTutorLinkResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            link: { $ref: '#/components/schemas/GuardianTutor' },
+          },
+          required: ['ok', 'link'],
+        },
         DeleteUserBlockedResponse: {
           type: 'object',
           properties: {
