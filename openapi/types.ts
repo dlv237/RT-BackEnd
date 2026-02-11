@@ -311,6 +311,84 @@ export interface paths {
       };
     };
   };
+  "/coordinators/{institutionId}/profit-share": {
+    /**
+     * Edit coordinator profit share
+     * @description Updates the profit share for a coordinator in a specific institution.
+     */
+    patch: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["EditCoordinatorProfitShareInput"];
+        };
+      };
+      responses: {
+        /** @description Coordinator profit share updated */
+        200: {
+          content: {
+            "application/json": components["schemas"]["EditCoordinatorProfitShareResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Coordinator profit share not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/coordinators/{institutionId}/payments": {
+    /**
+     * Create a coordinator payment
+     * @description Creates a payment marked as completed for the current month.
+     */
+    post: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          institutionId: number;
+        };
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateCoordinatorPaymentInput"];
+        };
+      };
+      responses: {
+        /** @description Coordinator payment created */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateCoordinatorPaymentResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Coordinator not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
   "/fees/{institutionId}": {
     /** Get all active fees from an institution */
     get: {
@@ -423,6 +501,12 @@ export interface paths {
   "/institutions": {
     /** Get all institutions */
     get: {
+      parameters: {
+        query?: {
+          /** @description If false, only active institutions are returned. If true or omitted, returns all. */
+          sendInactive?: boolean;
+        };
+      };
       responses: {
         /** @description List of institutions */
         200: {
@@ -509,7 +593,9 @@ export interface paths {
   "/institutions/{id}": {
     /**
      * Delete (deactivate) an institution
-     * @description Deletes an institution only if there are no pending class payments in the last 12 months and all coordinator payments for those months exist and are completed. Operation is a soft delete that deactivates the institution and its users.
+     * @description Soft delete an institution.
+     * - If the institution has no users, it can be deactivated immediately (no payment checks).
+     * - Otherwise, it can be deactivated only if there are no pending class payments in the last 12 months and all coordinator payments for those months exist and are completed.
      */
     delete: {
       parameters: {
@@ -562,6 +648,60 @@ export interface paths {
       };
     };
   };
+  "/institutions/{id}/deletion-options": {
+    /**
+     * Get deletion options for an institution
+     * @description Returns whether the institution can be hard-deleted (no users associated).
+     */
+    get: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          id: number;
+        };
+      };
+      responses: {
+        /** @description Deletion options */
+        200: {
+          content: {
+            "application/json": components["schemas"]["InstitutionDeletionOptionsResponse"];
+          };
+        };
+        /** @description Invalid institution id */
+        400: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/institutions/{id}/hard-delete": {
+    /**
+     * Permanently delete an institution
+     * @description Hard-delete an institution only if it has no users associated.
+     */
+    delete: {
+      parameters: {
+        path: {
+          /** @description Institution ID */
+          id: number;
+        };
+      };
+      responses: {
+        /** @description Institution deleted permanently */
+        200: {
+          content: {
+            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
+          };
+        };
+        /** @description Cannot hard-delete institution */
+        400: {
+          content: {
+            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
+          };
+        };
+      };
+    };
+  };
   "/mail": {
     /** Send email */
     post: {
@@ -588,10 +728,15 @@ export interface paths {
      * Get students by guardian ID
      * @description Retrieve students associated with a specific guardian.
      * - Admins/coordinators: returns all students
-     * - Guardians/tutors: returns only active students
+     * - Guardians: returns only active students for their own guardianId
+     * - Tutors: returns only active students when there is an active tutor-guardian link
      */
     get: {
       parameters: {
+        query?: {
+          /** @description If false, only active students are returned for admin/coordinator. If true or omitted, returns all. Guardians/tutors always receive only active students. */
+          sendInactive?: boolean;
+        };
         path: {
           /** @description Guardian ID */
           guardianId: number;
@@ -729,6 +874,39 @@ export interface paths {
       };
     };
   };
+  "/tutors/guardian-links": {
+    /**
+     * Create a guardian-tutor link
+     * @description Creates a GuardianTutor link.
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateGuardianTutorLinkInput"];
+        };
+      };
+      responses: {
+        /** @description Link created */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateGuardianTutorLinkResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden */
+        403: {
+          content: never;
+        };
+        /** @description Link already exists */
+        409: {
+          content: never;
+        };
+      };
+    };
+  };
   "/users": {
     /** List users */
     get: {
@@ -740,10 +918,14 @@ export interface paths {
           institutionId?: number;
           /** @description Case-insensitive search in name or email */
           nameOrEmail?: string;
+          /** @description If false, only active users are returned. If true or omitted, returns all. */
+          sendInactive?: boolean;
           /** @description Page number (1-based) */
           page?: number;
           /** @description Items per page */
           pageSize?: number;
+          /** @description Include user bank account details */
+          includeBankAccount?: boolean;
         };
       };
       responses: {
@@ -758,10 +940,14 @@ export interface paths {
     /**
      * Create a user
      * @description Create a new user in the system.
+     * - Only admins or coordinators can create users
+     * - Coordinators cannot create admin or coordinator users
      * - Admins must provide the institution ID
      * - Coordinators automatically use their own institution
      * - Initial password is set to the RUT number without the verifying digit
      * - Email must be unique (database constraint)
+     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
+     * - Only coordinator users can include coordinatorProfitShare
      * - Phone, address, and chargeEmail are optional
      */
     post: {
@@ -774,7 +960,7 @@ export interface paths {
         /** @description User created successfully */
         201: {
           content: {
-            "application/json": components["schemas"]["User"];
+            "application/json": components["schemas"]["CreateUserResponse"];
           };
         };
         /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
@@ -832,7 +1018,45 @@ export interface paths {
         204: {
           content: never;
         };
+        /** @description Cannot delete due to pending payments */
+        400: {
+          content: {
+            "application/json": components["schemas"]["DeleteUserBlockedResponse"];
+          };
+        };
         /** @description Forbidden - user lacks permission to delete this user */
+        403: {
+          content: never;
+        };
+        /** @description User not found */
+        404: {
+          content: never;
+        };
+      };
+    };
+  };
+  "/users/{id}/reactivate": {
+    /**
+     * Reactivate a user by ID
+     * @description Reactivates a previously deactivated user (isActive = true).
+     * - Admins and coordinators can reactivate users
+     * - Coordinators cannot reactivate admin or coordinator users
+     */
+    patch: {
+      parameters: {
+        path: {
+          /** @description User ID */
+          id: string;
+        };
+      };
+      responses: {
+        /** @description User reactivated successfully */
+        200: {
+          content: {
+            "application/json": components["schemas"]["ReactivateUserResponse"];
+          };
+        };
+        /** @description Forbidden - user lacks permission to reactivate this user */
         403: {
           content: never;
         };
@@ -935,7 +1159,11 @@ export interface paths {
     };
   };
   "/users/{id}/tutor-links": {
-    /** Get tutor links for a user */
+    /**
+     * Get tutor links for a user
+     * @description Returns tutor links. Only active links are returned by default,
+     * and guardians must be active to be included.
+     */
     get: {
       parameters: {
         path: {
@@ -1079,8 +1307,66 @@ export interface components {
       ok: boolean;
       message: string;
     };
-    UserWithInstitution: components["schemas"]["User"] & {
+    InstitutionDeletionOptionsResponse: {
+      ok: boolean;
+      canHardDelete: boolean;
+    };
+    HardDeleteInstitutionResponse: {
+      ok: boolean;
+      message: string;
+    };
+    ReactivateUserResponse: {
+      ok: boolean;
+      message: string;
+    };
+    EditCoordinatorProfitShareInput: {
+      coordinatorId: number;
+      profitShare: number;
+    };
+    EditCoordinatorProfitShareResponse: {
+      ok: boolean;
+      message: string;
+    };
+    CreateCoordinatorPaymentInput: {
+      coordinatorId: number;
+      amount: number;
+    };
+    CreateCoordinatorPaymentResponse: {
+      ok: boolean;
+      message: string;
+      payment: components["schemas"]["CoordinatorPayment"];
+    };
+    ErrorResponse: {
+      ok: boolean;
+      message: string;
+    };
+    CreateGuardianTutorLinkInput: {
+      guardianId: number;
+      tutorId: number;
+      institutionId: number;
+    };
+    CreateGuardianTutorLinkResponse: {
+      ok: boolean;
+      link: components["schemas"]["GuardianTutor"];
+    };
+    DeleteUserBlockedResponse: {
+      ok: boolean;
+      message: string;
+    };
+    UserWithInstitution: components["schemas"]["User"] & ({
       Institution?: components["schemas"]["Institution"];
+      BankAccount?: components["schemas"]["UserBankAccount"];
+      coordinatorProfitShares?: components["schemas"]["CoordinatorProfitShare"][] | null;
+    });
+    CoordinatorProfitShare: {
+      id: number;
+      coordinatorId: number;
+      institutionId: number;
+      profitShare: number;
+      /** Format: date-time */
+      createdAt?: string;
+      /** Format: date-time */
+      updatedAt?: string;
     };
     UserBankAccount: {
       id?: number;
@@ -1097,6 +1383,19 @@ export interface components {
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
+    };
+    CoordinatorPayment: {
+      id: number;
+      coordinatorId: number;
+      institutionId: number;
+      periodYear: number;
+      periodMonth: number;
+      amount: number;
+      status: components["schemas"]["PaymentStatus"];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
     Student: {
       id?: number;
@@ -1132,6 +1431,7 @@ export interface components {
       /** Format: date-time */
       updatedAt?: string;
     };
+    /** @description Tutor link with active guardian only. */
     TutorLink: components["schemas"]["GuardianTutor"] & {
       Guardian?: components["schemas"]["User"];
     };
@@ -1284,7 +1584,13 @@ export interface components {
     }]>;
     CreateUserWithBankAccountInput: components["schemas"]["UserInput"] & ({
       BankAccount?: components["schemas"]["UserBankAccountInput"] | null;
+      /** @description Profit share percentage for coordinator users. Defaults to 30 when omitted. */
+      coordinatorProfitShare?: number | null;
     });
+    CreateUserResponse: {
+      ok: boolean;
+      user: components["schemas"]["User"];
+    };
     /** @description UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator. */
     UserByIdResponse: components["schemas"]["UserDetail"] & ({
       /** @description Profit share percentage for coordinator users. Only present when user role is coordinator. */
