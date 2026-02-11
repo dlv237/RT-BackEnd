@@ -376,6 +376,134 @@
           "message"
         ]
       },
+      "EditCoordinatorProfitShareInput": {
+        "type": "object",
+        "properties": {
+          "coordinatorId": {
+            "type": "integer"
+          },
+          "profitShare": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "coordinatorId",
+          "profitShare"
+        ]
+      },
+      "EditCoordinatorProfitShareResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ]
+      },
+      "CreateCoordinatorPaymentInput": {
+        "type": "object",
+        "properties": {
+          "coordinatorId": {
+            "type": "integer"
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "coordinatorId",
+          "amount"
+        ]
+      },
+      "CreateCoordinatorPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/CoordinatorPayment"
+          }
+        },
+        "required": [
+          "ok",
+          "message",
+          "payment"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ]
+      },
+      "CreateGuardianTutorLinkInput": {
+        "type": "object",
+        "properties": {
+          "guardianId": {
+            "type": "integer"
+          },
+          "tutorId": {
+            "type": "integer"
+          },
+          "institutionId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "guardianId",
+          "tutorId",
+          "institutionId"
+        ]
+      },
+      "CreateGuardianTutorLinkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "link": {
+            "$ref": "#/components/schemas/GuardianTutor"
+          }
+        },
+        "required": [
+          "ok",
+          "link"
+        ]
+      },
+      "DeleteUserBlockedResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ]
+      },
       "UserWithInstitution": {
         "allOf": [
           {
@@ -433,6 +561,51 @@
             "format": "date-time"
           }
         }
+      },
+      "CoordinatorPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "coordinatorId": {
+            "type": "integer"
+          },
+          "institutionId": {
+            "type": "integer"
+          },
+          "periodYear": {
+            "type": "integer"
+          },
+          "periodMonth": {
+            "type": "integer"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "coordinatorId",
+          "institutionId",
+          "periodYear",
+          "periodMonth",
+          "amount",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "Student": {
         "type": "object",
@@ -1149,6 +1322,11 @@
                   }
                 ],
                 "nullable": true
+              },
+              "coordinatorProfitShare": {
+                "type": "number",
+                "nullable": true,
+                "description": "Profit share percentage for coordinator users. Defaults to 30 when omitted."
               }
             }
           }
@@ -1160,16 +1338,12 @@
           "ok": {
             "type": "boolean"
           },
-          "reactivated": {
-            "type": "boolean"
-          },
           "user": {
             "$ref": "#/components/schemas/User"
           }
         },
         "required": [
           "ok",
-          "reactivated",
           "user"
         ]
       },
@@ -2065,6 +2239,108 @@
         }
       }
     },
+    "/coordinators/{institutionId}/profit-share": {
+      "patch": {
+        "summary": "Edit coordinator profit share",
+        "description": "Updates the profit share for a coordinator in a specific institution.",
+        "tags": [
+          "Coordinators"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "institutionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Institution ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditCoordinatorProfitShareInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coordinator profit share updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditCoordinatorProfitShareResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Coordinator profit share not found"
+          }
+        }
+      }
+    },
+    "/coordinators/{institutionId}/payments": {
+      "post": {
+        "summary": "Create a coordinator payment",
+        "description": "Creates a payment marked as completed for the current month.",
+        "tags": [
+          "Coordinators"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "institutionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Institution ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCoordinatorPaymentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Coordinator payment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCoordinatorPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Coordinator not found"
+          }
+        }
+      }
+    },
     "/fees/{institutionId}": {
       "get": {
         "summary": "Get all active fees from an institution",
@@ -2817,6 +3093,46 @@
         }
       }
     },
+    "/tutors/guardian-links": {
+      "post": {
+        "summary": "Create a guardian-tutor link",
+        "description": "Creates a GuardianTutor link.",
+        "tags": [
+          "Tutors"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuardianTutorLinkInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Link created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGuardianTutorLinkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Link already exists"
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "summary": "List users",
@@ -2902,7 +3218,7 @@
       },
       "post": {
         "summary": "Create a user",
-        "description": "Create a new user in the system.\n- Admins must provide the institution ID\n- Coordinators automatically use their own institution\n- Initial password is set to the RUT number without the verifying digit\n- Email must be unique (database constraint)\n- Phone, address, and chargeEmail are optional\n",
+        "description": "Create a new user in the system.\n- Only admins or coordinators can create users\n- Coordinators cannot create admin or coordinator users\n- Admins must provide the institution ID\n- Coordinators automatically use their own institution\n- Initial password is set to the RUT number without the verifying digit\n- Email must be unique (database constraint)\n- For coordinators, coordinatorProfitShare defaults to 30% if not provided\n- Only coordinator users can include coordinatorProfitShare\n- Phone, address, and chargeEmail are optional\n",
         "tags": [
           "Users"
         ],
@@ -2917,16 +3233,6 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "User reactivated instead of created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateUserResponse"
-                }
-              }
-            }
-          },
           "201": {
             "description": "User created successfully",
             "content": {
@@ -2967,6 +3273,16 @@
         "responses": {
           "204": {
             "description": "User deleted successfully (soft delete)"
+          },
+          "400": {
+            "description": "Cannot delete due to pending payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteUserBlockedResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Forbidden - user lacks permission to delete this user"

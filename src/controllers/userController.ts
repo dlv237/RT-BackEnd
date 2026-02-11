@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import argon2 from 'argon2';
-import { AccountType, PrismaClient, UserRole } from '@prisma/client';
+import { AccountType, PaymentStatus, PrismaClient, UserRole } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export async function getUsers(_req: Request, res: Response, next: NextFunction) {
@@ -51,18 +51,18 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       address,
       chargeEmail,
       institutionId,
-      BankAccount
+      BankAccount,
+      coordinatorProfitShare
     } = req.body
 
     const userRole = (req as any).auth?.role;
 
-    /*     
-    if (userRole !== 'admin' || userRole !== 'coordinator') {
+    if (userRole !== 'admin' && userRole !== 'coordinator') {
       return res.status(403).json({ ok: false, message: 'Forbidden' })
     }
     if (userRole === 'coordinator' && (role === 'admin' || role === 'coordinator')) {
       return res.status(403).json({ ok: false, message: 'Coordinators cannot create admin or coordinator users.' })
-    } */
+    }
 
     // Input Validation
 
@@ -100,11 +100,18 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       }
     }
 
-
-    if (role !== 'admin' && institutionId == null) {
+    // Condiciones para cada rol
+    if (role !== 'admin' && institutionId == null && userRole !== 'coordinator') {
       return res.status(400).json({
         ok: false,
         message: 'Non-admin users must be associated with an institution.'
+      })
+    }
+
+    if (role !== 'coordinator' && coordinatorProfitShare != null) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Only coordinator users can have coordinator profit share.'
       })
     }
 
@@ -115,6 +122,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       })
     }
 
+    // Asignar un institutionId para el apoderado, el del coordinador que lo creo o el dado por el admin.
     let finalInstitutionId: number = institutionId;
 
     if (userRole === 'coordinator') {
@@ -135,35 +143,14 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, isActive: true, rut: true }
+      select: { id: true, isActive: true }
     })
 
     if (existingUser) {
       if (existingUser.isActive) {
         return res.status(400).json({ ok: false, message: 'Email already exists' })
       }
-
-      const existingPassword = existingUser.rut
-        ? String(existingUser.rut).split('-')[0].replace(/\D/g, '')
-        : undefined
-
-      if (!existingPassword) {
-        return res.status(400).json({
-          ok: false,
-          message: 'Existing RUT not provided or invalid, cannot generate password.'
-        })
-      }
-
-      const resetHashedPassword = await argon2.hash(existingPassword, {
-        secret: Buffer.from(process.env.ARGON2_SECRET_PEPPER || '', 'base64')
-      })
-
-      const reactivatedUser = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { isActive: true, hashedPassword: resetHashedPassword }
-      })
-
-      return res.status(200).json({ ok: true, reactivated: true, user: reactivatedUser })
+      return res.status(400).json({ ok: false, message: 'Ese correo esta desactivado' })
     }
 
     const hashedPassword = await argon2.hash(password, {
@@ -184,34 +171,84 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       }
     })
 
+    if (role === 'coordinator') {
+      let resolvedProfitShare = coordinatorProfitShare ? Number(coordinatorProfitShare) : 30
+
+      const totalCoordinatorsCurrentProfitShare = await prisma.coordinatorProfitShare.aggregate({
+        where: { institutionId: finalInstitutionId },
+        _sum: { profitShare: true }
+      })
+
+      const totalCurrentProfitShare = 40 + Number(totalCoordinatorsCurrentProfitShare._sum.profitShare || 0)
+
+      if (totalCurrentProfitShare + resolvedProfitShare > 100) {
+        resolvedProfitShare = 0
+      }
+
+      await prisma.coordinatorProfitShare.create({
+        data: {
+          coordinatorId: newUser.id,
+          institutionId: finalInstitutionId,
+          profitShare: resolvedProfitShare
+        }
+      })
+    }
+
     if (BankAccount) {
       const {
         bankName,
         accountType,
         accountNumber,
         rutHolder,
+        rut: bankRut,
         accountEmail,
         accountName
       } = BankAccount
+
+      if (!bankName || typeof bankName !== 'string' || bankName.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Bank name is required.' })
+      }
+
+      if (!accountType || !Object.values(AccountType).includes(accountType as AccountType)) {
+        return res.status(400).json({ ok: false, message: 'Invalid account type.' })
+      }
+
+      if (!accountNumber || typeof accountNumber !== 'string' || accountNumber.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account number is required.' })
+      }
+
+      if (!accountName || typeof accountName !== 'string' || accountName.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account name is required.' })
+      }
+
+      if (!accountEmail || typeof accountEmail !== 'string' || accountEmail.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account email is required.' })
+      }
+
+      const bankRutValue = rutHolder || bankRut || rut
+      if (!bankRutValue || typeof bankRutValue !== 'string' || bankRutValue.trim() === '') {
+        return res.status(400).json({ ok: false, message: 'Account RUT is required.' })
+      }
 
       await prisma.userBankAccount.create({
         data: {
           userId: newUser.id,
           bankName,
-          accountType,
+          accountType: accountType as AccountType,
           accountNumber,
           accountName,
-          rut: rutHolder || rut,
-          accountEmail: accountEmail || email
+          rut: bankRutValue,
+          accountEmail
         }
       });
     }
     // Then: Send email with credentials (omitted for now)
-    res.status(201).json({ ok: true, reactivated: false, user: newUser })
+    res.status(201).json({ ok: true, user: newUser })
   } catch (err) {
     next(err)
   }
 }
+
 export async function deleteUser(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params
@@ -222,8 +259,6 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       return res.status(403).json({ ok: false, message: 'Forbidden' })
     } */
     
-    
-    
     const userId = Number(id)
     const user = await prisma.user.findUnique({ where: { id: userId } })
 
@@ -231,13 +266,39 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       return res.status(404).json({ ok: false, message: 'User not found' })
     }
 
-    if (userRole === 'coordinator' && user.role === 'admin' || user.role === 'coordinator') {
-      return res.status(403).json({ ok: false, message: 'Coordinators cannot delete admin or coordinator users.' })
+    if (user.role === 'admin') {
+      return res.status(403).json({ ok: false, message: 'Admins cannot be deleted.' })
+    }
+
+    if (user.role === 'coordinator' && userRole !== 'admin') {
+      return res.status(403).json({ ok: false, message: 'Only admins can deactivate coordinators.' })
+    }
+
+    // Solo eliminar si no hay pagos pendientes (apoderado)
+    if (user.role === 'guardian') {
+      const pendingPayment = await prisma.classPayment.findFirst({
+        where: {
+          guardianPaymentStatus: PaymentStatus.pending,
+          Class: {
+            Student: {
+              guardianId: userId
+            }
+          }
+        },
+        select: { id: true }
+      })
+
+      if (pendingPayment) {
+        return res.status(400).json({
+          ok: false,
+          message: 'No se puede eliminar un usuario con pagos pendientes'
+        })
+      }
     }
 
     await prisma.user.update({
       where: { id: userId },
-      data: { isActive: false }
+      data: { isActive: false, deactivatedAt: new Date() }
     });
 
     if (user.role === 'guardian') {
@@ -273,13 +334,17 @@ export async function reactivateUser(req: Request, res: Response, next: NextFunc
       return res.status(404).json({ ok: false, message: 'User not found' })
     }
 
+    if (user.role === 'coordinator' && userRole !== 'admin') {
+      return res.status(403).json({ ok: false, message: 'Only admins can reactivate coordinators.' })
+    }
+
     if (userRole === 'coordinator' && (user.role === 'admin' || user.role === 'coordinator')) {
       return res.status(403).json({ ok: false, message: 'Coordinators cannot reactivate admin or coordinator users.' })
     }
 
     await prisma.user.update({
       where: { id: userId },
-      data: { isActive: true }
+      data: { isActive: true, deactivatedAt: null }
     })
 
     if (user.role === 'guardian') {
