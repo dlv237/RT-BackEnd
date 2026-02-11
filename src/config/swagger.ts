@@ -165,6 +165,72 @@ const options: swaggerJSDoc.Options = {
           },
           required: ['ok', 'message'],
         },
+        EditCoordinatorProfitShareInput: {
+          type: 'object',
+          properties: {
+            coordinatorId: { type: 'integer' },
+            profitShare: { type: 'number' },
+          },
+          required: ['coordinatorId', 'profitShare'],
+        },
+        EditCoordinatorProfitShareResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
+        CreateCoordinatorPaymentInput: {
+          type: 'object',
+          properties: {
+            coordinatorId: { type: 'integer' },
+            amount: { type: 'number' },
+          },
+          required: ['coordinatorId', 'amount'],
+        },
+        CreateCoordinatorPaymentResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+            payment: { $ref: '#/components/schemas/CoordinatorPayment' },
+          },
+          required: ['ok', 'message', 'payment'],
+        },
+        ErrorResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
+        CreateGuardianTutorLinkInput: {
+          type: 'object',
+          properties: {
+            guardianId: { type: 'integer' },
+            tutorId: { type: 'integer' },
+            institutionId: { type: 'integer' },
+          },
+          required: ['guardianId', 'tutorId', 'institutionId'],
+        },
+        CreateGuardianTutorLinkResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            link: { $ref: '#/components/schemas/GuardianTutor' },
+          },
+          required: ['ok', 'link'],
+        },
+        DeleteUserBlockedResponse: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+          required: ['ok', 'message'],
+        },
         UserWithInstitution: {
           allOf: [
             { $ref: '#/components/schemas/User' },
@@ -190,6 +256,31 @@ const options: swaggerJSDoc.Options = {
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }
+        },
+        CoordinatorPayment: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            coordinatorId: { type: 'integer' },
+            institutionId: { type: 'integer' },
+            periodYear: { type: 'integer' },
+            periodMonth: { type: 'integer' },
+            amount: { type: 'integer' },
+            status: { $ref: '#/components/schemas/PaymentStatus' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+          required: [
+            'id',
+            'coordinatorId',
+            'institutionId',
+            'periodYear',
+            'periodMonth',
+            'amount',
+            'status',
+            'createdAt',
+            'updatedAt',
+          ],
         },
         Student: {
           type: 'object',
@@ -599,6 +690,11 @@ const options: swaggerJSDoc.Options = {
                 BankAccount: {
                   allOf: [{ $ref: '#/components/schemas/UserBankAccountInput' }],
                   nullable: true
+                },
+                coordinatorProfitShare: {
+                  type: 'number',
+                  nullable: true,
+                  description: 'Profit share percentage for coordinator users. Defaults to 30 when omitted.'
                 }
               }
             }
@@ -608,10 +704,9 @@ const options: swaggerJSDoc.Options = {
           type: 'object',
           properties: {
             ok: { type: 'boolean' },
-            reactivated: { type: 'boolean' },
             user: { $ref: '#/components/schemas/User' }
           },
-          required: ['ok', 'reactivated', 'user']
+          required: ['ok', 'user']
         },
         UserByIdResponse: {
           description: 'UserDetail with optional coordinatorProfitShare field. coordinatorProfitShare is only present when user role is coordinator.',
