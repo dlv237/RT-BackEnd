@@ -27,34 +27,43 @@ export async function editCoordinatorProfitShare(req: Request, res: Response, ne
       return res.status(400).json({ ok: false, message: 'Coordinator ID is required' });
     }
 
-    const existing = await prisma.coordinatorProfitShare.findUnique({
+    const totalCoordinatorsCurrentProfitShare = await prisma.coordinatorProfitShare.aggregate({
       where: {
-        coordinatorId_institutionId: {
-          coordinatorId: parsedCoordinatorId,
-          institutionId: parsedInstitutionId,
-        },
+        institutionId: parsedInstitutionId,
+        coordinatorId: { not: parsedCoordinatorId },
       },
-      select: { id: true },
+      _sum: {
+        profitShare: true,
+      },
     })
+    
+    const totalCurrentProfitShare = 40 + Number(totalCoordinatorsCurrentProfitShare._sum.profitShare || 0)
 
-    if (!existing) {
-      return res.status(404).json({
-        ok: false,
-        message: 'Coordinator profit share not found for this institution.',
-      })
+    if (totalCurrentProfitShare + profitShare > 100) {
+      return res.status(400).json({ ok: false, message: `Total profit share for the institution cannot exceed 100%. Current total excluding this coordinator: ${totalCurrentProfitShare}%` });
     }
 
-    await prisma.coordinatorProfitShare.update({
-      where: {
-        coordinatorId_institutionId: {
-          coordinatorId: parsedCoordinatorId,
-          institutionId: parsedInstitutionId,
+    try {
+      await prisma.coordinatorProfitShare.update({
+        where: {
+          coordinatorId_institutionId: {
+            coordinatorId: parsedCoordinatorId,
+            institutionId: parsedInstitutionId,
+          },
         },
-      },
-      data: {
-        profitShare,
-      },
-    })
+        data: {
+          profitShare,
+        },
+      })
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        return res.status(404).json({
+          ok: false,
+          message: 'Coordinator profit share not found for this institution.',
+        })
+      }
+      throw error
+    }
 
     res.status(200).json({ ok: true, message: 'Coordinator profit share updated successfully' });
   } catch (err) {
