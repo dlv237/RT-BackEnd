@@ -172,7 +172,18 @@ export async function createUser(req: Request, res: Response, next: NextFunction
     })
 
     if (role === 'coordinator') {
-      const resolvedProfitShare = coordinatorProfitShare == null ? 30 : Number(coordinatorProfitShare)
+      let resolvedProfitShare = coordinatorProfitShare ? Number(coordinatorProfitShare) : 30
+
+      const totalCoordinatorsCurrentProfitShare = await prisma.coordinatorProfitShare.aggregate({
+        where: { institutionId: finalInstitutionId },
+        _sum: { profitShare: true }
+      })
+
+      const totalCurrentProfitShare = 40 + Number(totalCoordinatorsCurrentProfitShare._sum.profitShare || 0)
+
+      if (totalCurrentProfitShare + resolvedProfitShare > 100) {
+        resolvedProfitShare = 0
+      }
 
       await prisma.coordinatorProfitShare.create({
         data: {
