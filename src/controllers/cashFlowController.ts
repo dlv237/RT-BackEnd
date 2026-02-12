@@ -1,17 +1,182 @@
 import prisma from "../lib/prisma"
 import { Request, Response, NextFunction } from "express"
 import { UserRole, PaymentStatus } from "@prisma/client"
-import { start } from "repl"
+import { Decimal } from "@prisma/client/runtime/library"
 
 export async function getCashFlowSummary(req: Request, res: Response, next: NextFunction){
-    const role = (req as any).auth.role as UserRole
-
     const {
         startDate,
-        endDate
+        endDate,
     } = req.query
+    const role = (req as any).auth.role as UserRole
 
-    if (role === UserRole.admin){
+    // startDate and endDate must be provided and must be valid dates and complete months, so, startDate must be the first day of the month and endDate must be the last day of the month
+    if (!startDate || !endDate) {
+        return res.status(400).json({ ok: false, message: 'Start date and end date are required' })
+    }
+
+    const start = new Date(startDate as string)
+    const end = new Date(endDate as string)
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ ok: false, message: 'Invalid date format' })
+    }
+
+    if (start.getUTCDate() !== 1) {
+        return res.status(400).json({ ok: false, message: 'Start date must be the first day of the month' })
+    }
+
+    const lastDayOfMonth = new Date(end.getUTCFullYear(), end.getUTCMonth() + 1, 0).getDate()
+    if (end.getUTCDate() !== lastDayOfMonth) {
+        return res.status(400).json({ ok: false, message: 'End date must be the last day of the month' })
+    }
+
+    if (role === 'admin') {
+        const adminPayments = await prisma.adminPayment.findMany({
+            where: {
+                period: {
+                    gte: new Date(startDate as string),
+                    lte: new Date(endDate as string)
+                }
+            },
+            select: {
+                amount: true,
+                status: true,
+                period: true
+            }
+        })
+
+        // The previous query returns payments for the past periods that are completed, so, the pending
+        // payments are the ones of the current period, but, we also need to check if there is a month
+        // between the start and end date that has no payment record. If is it not the case, 
+        // we need to calculate every month that has no record.
+
+        // For example, in the database we have the records
+        // | id | period     | amount | status    |
+        // |----|------------|--------|-----------|
+        // | 1  | 2025-11-01 | 250000 | completed |
+        // | 2  | 2026-01-01 | 310000 | completed |
+
+        // Today is 2026-02-12, so, if we query from 2025-10-01 to Today, we have the following pending months to calculate:
+        // - 2025-10-01 to 2025-10-31 (no record)
+        // - 2025-12-01 to 2025-12-31 (no record)
+        // - 2026-02-01 to 2026-02-28 (current month, no record)
+
+        // The records from the database are already calculated, so, we we only have to calculate the pending months, one by one.
+
+        const existingPeriods = new Set(
+            adminPayments.map((p) => {
+                return `${p.period.getUTCFullYear()}-${p.period.getUTCMonth()}`
+            })
+        )
+
+        const pendingMonths = []
+        const currentIter = new Date(start) 
+
+        while (currentIter <= end) {
+            const currentYear = currentIter.getUTCFullYear()
+            const currentMonth = currentIter.getUTCMonth()
+            const periodKey = `${currentYear}-${currentMonth}`
+
+            if (!existingPeriods.has(periodKey)) {
+                const monthStart = new Date(currentIter)
+                
+                const monthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999))
+
+                pendingMonths.push({
+                    start: monthStart,
+                    end: monthEnd
+                })
+            }
+
+            currentIter.setUTCMonth(currentIter.getUTCMonth() + 1)
+        }
+
+        const adminShares = await prisma.adminProfitShare.findMany({
+            where: {
+                availableSince: {
+                    lte: end
+                },
+                availableUntil: {
+                    gte: start
+                }
+            },
+            orderBy: {
+                availableSince: 'asc'
+            }
+        })
+
+        for (const month of pendingMonths) {
+            const monthStart = month.start
+            const monthEnd = month.end
+
+            let amount = 0
+
+            // At this point, we can have multiple adminShare, for example, in the relation AdminProfitShare, we have 
+            // | id | profitShare | availableSince | availableUntil 
+            // |----|-------------|----------------|----------------|
+            // | 1  | 40          | 2026-01-12     | 2300-01-01     |
+            // | 2  | 20          | 2025-12-12     | 2026-01-12     |
+            // | 3  | 30          | 2020-02-12     | 2025-12-12     |
+
+            // As we can see, the share for december 2025, that is a pending month, is 20% from the begin of december 
+            // to 12 of december, and 30% from 12 of december to the end of december. 
+
+            // For this case (and other with multiple shares in the same month), we need to calculate the share for each period and then sum the results.
+            const adminSharesForTheMonth = adminShares.filter((s) => {
+                return (s.availableSince <= monthEnd) && (s.availableUntil >= monthStart)
+            })
+            const periodForEachShare = adminSharesForTheMonth.map((s) => {
+                const shareStart = s.availableSince > monthStart ? s.availableSince : monthStart
+                const shareEnd = s.availableUntil < monthEnd ? s.availableUntil : monthEnd
+                return {
+                    shareStart,
+                    shareEnd,
+                }
+            })
+
+            for (const [index, period] of periodForEachShare.entries()) {
+                const share = adminSharesForTheMonth[index].profitShare as Decimal
+                // Here we can calculate the amount to receive and pay for the month, using the share and the total amount of the month, that is calculated using the class payments.
+                const guardianPayments = await prisma.classPayment.aggregate({
+                    _sum: {
+                        guardianAmount: true
+                    },
+                    where: {
+                        Class: {
+                            date: {
+                                gte: new Date(period.shareStart),
+                                lte: new Date(period.shareEnd)
+                            }
+                        },
+                    }
+                })
+
+                const tutorPayments = await prisma.classPayment.aggregate({
+                    _sum: {
+                        tutorAmount: true
+                    },
+                    where: {
+                        Class: {
+                            date: {
+                                gte: new Date(period.shareStart),
+                                lte: new Date(period.shareEnd)
+                            }
+                        },
+                    }
+                })
+
+                amount += (guardianPayments._sum.guardianAmount || 0) * (share.toNumber() / 100) - (tutorPayments._sum.tutorAmount || 0) * (share.toNumber() / 100)
+            }
+
+            adminPayments.push({
+                amount,
+                status: 'pending' as PaymentStatus,
+                period: monthStart
+            })
+        }
+
+        // Finally, we can sum the amounts for each month and return the result.
         const { institutionId } = req.query
 
         const payments = await prisma.classPayment.groupBy({
@@ -31,14 +196,14 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             }
         })
 
-        let ammountToReceive = 0
+        let amountToReceive = 0
         let amountReceived = 0
         let amountToPay = 0
         let amountPaid = 0
 
         payments.forEach(payment => {
             if (payment.guardianPaymentStatus === PaymentStatus.pending) {
-                ammountToReceive += payment._sum.guardianAmount || 0
+                amountToReceive += payment._sum.guardianAmount || 0
             } else if (payment.guardianPaymentStatus === PaymentStatus.completed) {
                 amountReceived += payment._sum.guardianAmount || 0
             }
@@ -50,18 +215,150 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             }
         })
 
-        const share = 0.4
+        const adminAmountToReceive = adminPayments.reduce((acc, payment) => {
+            if (payment.status === 'pending') {
+                return acc + payment.amount
+            } else {
+                return acc
+            }
+        }, 0)
 
-        return res.json({
-            ammountToReceive,
-            amountReceived,
-            amountToPay,
-            amountPaid,
-            share
-        })
-   
-    } else if (role === UserRole.coordinator){
+        const adminAmountReceived = adminPayments.reduce((acc, payment) => {
+            if (payment.status === 'completed') {
+                return acc + payment.amount
+            } else {
+                return acc
+            }
+        }, 0)
+
+        return res.json({ adminPayments, amountToReceive, amountReceived, amountToPay, amountPaid, adminAmountToReceive, adminAmountReceived })
+    } else if (role === 'coordinator') {
+        // For the coordinator, the logic is basically the same, but we need to filter the payments by the institution of the coordinator, and we also need to calculate the share for the coordinator, that is stored in the CoordinatorProfitShare relation.
+        
         const institutionId = (req as any).auth.institutionId
+        const userId = (req as any).auth.uid
+
+        const coordinatorPayments = await prisma.coordinatorPayment.findMany({
+            where: {
+                period: {
+                    gte: new Date(startDate as string),
+                    lte: new Date(endDate as string)
+                }
+            },
+            select: {
+                amount: true,
+                status: true,
+                period: true
+            }
+        })
+
+        const existingPeriods = new Set(
+            coordinatorPayments.map((p) => {
+                return `${p.period.getUTCFullYear()}-${p.period.getUTCMonth()}`
+             })
+        )
+
+        const pendingMonths = []
+        const currentIter = new Date(start) 
+
+        while (currentIter <= end) {
+            const currentYear = currentIter.getUTCFullYear()
+            const currentMonth = currentIter.getUTCMonth()
+            const periodKey = `${currentYear}-${currentMonth}`
+
+            if (!existingPeriods.has(periodKey)) {
+                const monthStart = new Date(currentIter)
+                
+                const monthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999))
+
+                pendingMonths.push({
+                    start: monthStart,
+                    end: monthEnd
+                })
+            }
+            currentIter.setUTCMonth(currentIter.getUTCMonth() + 1)
+        }
+
+         // For the coordinator, we need to filter the shares by the institution and also by the coordinator id, so, we need to add the condition of coordinatorId in the query.
+        const coordinatorShares = await prisma.coordinatorProfitShare.findMany({
+            where: {
+                coordinatorId: userId,
+                institutionId,
+                availableSince: {
+                    lte: end
+                },
+                availableUntil: {
+                    gte: start
+                }
+            },
+            orderBy: {
+                availableSince: 'asc'
+            }
+        })
+
+        const coordinatorPaymentsResult = []
+
+        for (const month of pendingMonths) {
+            const monthStart = month.start
+            const monthEnd = month.end
+
+            let amount = 0
+
+            const coordinatorSharesForTheMonth = coordinatorShares.filter((s) => {
+                return (s.availableSince <= monthEnd) && (s.availableUntil >= monthStart)
+            })
+            const periodForEachShare = coordinatorSharesForTheMonth.map((s) => {
+                const shareStart = s.availableSince > monthStart ? s.availableSince : monthStart
+                const shareEnd = s.availableUntil < monthEnd ? s.availableUntil : monthEnd
+                return {
+                shareStart,
+                    shareEnd,
+                }
+            })
+
+            for (const [index, period] of periodForEachShare.entries()) {
+                const share = coordinatorSharesForTheMonth[index].profitShare as Decimal
+                // Here we can calculate the amount to receive and pay for the month, using the share and the total amount of the month, that is calculated using the class payments.
+                const guardianPayments = await prisma.classPayment.aggregate({
+                    _sum: {
+                        guardianAmount: true
+                    },
+                    where: {
+                        Class: {
+                            institutionId,
+                            date: {
+                                gte: new Date(period.shareStart),
+                                lte: new Date(period.shareEnd)
+                            }
+                        },
+                    }
+                })
+
+                const tutorPayments = await prisma.classPayment.aggregate({
+                    _sum: {
+                        tutorAmount: true
+                    },
+                    where: {
+                        Class: {
+                            institutionId,
+                            date: {
+                                gte: new Date(period.shareStart),
+                                lte: new Date(period.shareEnd)
+                            }
+                        },
+                    }
+                })
+
+                amount += (guardianPayments._sum.guardianAmount || 0) * (share.toNumber() / 100) - (tutorPayments._sum.tutorAmount || 0) * (share.toNumber() / 100)
+            }
+
+            coordinatorPaymentsResult.push({
+                amount,
+                status: 'pending' as PaymentStatus,
+                period: monthStart
+            })
+        }
+
         const payments = await prisma.classPayment.groupBy({
             by: ['guardianPaymentStatus', 'tutorPaymentStatus'],
             _sum: {
@@ -70,7 +367,7 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             },
             where: {
                 Class: {
-                    institutionId: institutionId,
+                    institutionId,
                     date: {
                         gte: startDate ? new Date(startDate as string) : undefined,
                         lte: endDate ? new Date(endDate as string) : undefined
@@ -79,14 +376,14 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             }
         })
 
-        let ammountToReceive = 0
+        let amountToReceive = 0
         let amountReceived = 0
         let amountToPay = 0
         let amountPaid = 0
 
         payments.forEach(payment => {
             if (payment.guardianPaymentStatus === PaymentStatus.pending) {
-                ammountToReceive += payment._sum.guardianAmount || 0
+                amountToReceive += payment._sum.guardianAmount || 0
             } else if (payment.guardianPaymentStatus === PaymentStatus.completed) {
                 amountReceived += payment._sum.guardianAmount || 0
             }
@@ -98,141 +395,25 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             }
         })
 
-        const share = prisma.coordinatorProfitShare.findFirst({
-            where: {
-                institutionId: institutionId,
-                coordinatorId: (req as any).auth.userId
-            }, select: {
-                profitShare: true
+        const coordinatorAmountToReceive = coordinatorPaymentsResult.reduce((acc, payment) => {
+            if (payment.status === 'pending') {
+                return acc + payment.amount
+            } else {
+                return acc
             }
-        })
+        }, 0)
 
-        return res.json({
-            ammountToReceive,
-            amountReceived,
-            amountToPay,
-            amountPaid,
-            share
-        })
+        const coordinatorAmountReceived = coordinatorPaymentsResult.reduce((acc, payment) => {
+            if (payment.status === 'completed') {
+                return acc + payment.amount
+            } else {
+                return acc
+            }
+        }, 0)
+
+        return res.json({ coordinatorPayments: coordinatorPaymentsResult, amountToReceive, amountReceived, amountToPay, amountPaid, coordinatorAmountToReceive, coordinatorAmountReceived })
     } else {
-        return res.status(403).json({ message: "Forbidden" })
+        return res.status(400).json({ ok: false, message: 'Forbidden' })
     }
 }
-
-export async function getCashFlowDetails(req: Request, res: Response, next: NextFunction){
-    const {
-        institutionId,
-        startDate,
-        endDate,
-        paymentStatus,
-        userRole,
-        page,
-        pageSize
-    } = req.query
-
-    /*
-    const role = (req as any).auth.role as UserRole
-    const userId = (req as any).auth.uid as number
-
-    if (role !== UserRole.admin && role !== UserRole.coordinator) {
-        return res.status(403).json({ message: "Forbidden" })
-    }
-    */
-
-    if (userRole === 'admin' || userRole === 'coordinator') {
-        // For this case, we return the payments status related to the admins 
-        if (!startDate || !endDate) {
-            return res.status(400).json({ message: "startDate and endDate are required for admin role" })
-        }
-        const s = new Date(startDate as string)
-        const e = new Date(endDate as string)
-
-        if (s.getUTCDate() !== 1 || e.toISOString().split('T')[0] !== new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth() + 1, 0)).toISOString().split('T')[0]) {
-            return res.status(400).json({ message: "startDate and endDate must match an entire single month (e.g. 1st to 30th/31st)" })
-        }
-
-        // Ensure e covers the entire end day (23:59:59.999) so we include records from the last day
-        e.setUTCHours(23, 59, 59, 999)
-
-        if (userRole === 'admin') {
-            const adminPayment = await prisma.adminPayment.findFirst({
-                where: {
-                    periodMonth: s.getUTCMonth() + 1,
-                    periodYear: s.getUTCFullYear(),
-                }
-            })
-            const userId = (req as any).auth.userId as number
-            const admin = await prisma.user.findUnique({
-                where: {
-                    id: userId
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    institutionId: true
-                }
-            })
-            return {
-                id: admin?.id,
-                name: admin?.name,
-                email: admin?.email,
-                paymentStatus: adminPayment ? adminPayment?.status : PaymentStatus.pending,
-            } 
-        } else if (userRole === 'coordinator') {
-            const coordinatorsData = await prisma.user.findMany({
-                where: {
-                    institutionId: institutionId ? Number(institutionId) : undefined,
-                    role: UserRole.coordinator
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    institutionId: true,
-                    coordinatorProfitShares: {
-                        where: {
-                            createdAt: {
-                                lte: e
-                            }
-                        },
-                        orderBy: {
-                            createdAt: 'desc'
-                        },
-                        select: {
-                            profitShare: true
-                        },
-                    },
-                    coordinatorPayments: {
-                        where: {
-                            periodMonth: s.getUTCMonth() + 1,
-                            periodYear: s.getUTCFullYear(),
-                        },
-                        select: {
-                            status: true
-                        }
-                    }
-                },
-                skip: page && pageSize ? (Number(page) - 1) * Number(pageSize) : undefined,
-                take: pageSize ? Number(pageSize) : undefined
-            })
-
-            const cordinators = coordinatorsData.map(coordinator => {
-                const { coordinatorProfitShares, coordinatorPayments, ...rest } = coordinator
-                return {
-                    ...rest,
-                    profitShare: coordinatorProfitShares[0]?.profitShare ? coordinatorProfitShares[0].profitShare : 0,
-                    paymentStatus: coordinatorPayments[0]?.status ? coordinatorPayments[0].status : PaymentStatus.pending
-                }
-            })
             
-            return res.json(cordinators)
-        }
-
-        return res.json({ message: "Not implemented yet" })
-    }
-    else {
-        return res.status(403).json({ message: "Forbidden" })
-    }
-
-}

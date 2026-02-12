@@ -140,26 +140,26 @@ export interface paths {
   "/cashflow/summary": {
     /**
      * Get cash flow summary
-     * @description Returns a summary of amounts to receive and pay for the institution.
+     * @description Returns a summary of amounts to receive and pay.
      *
-     * Calculates:
-     * - ammountToReceive: Pending payments from Guardians
-     * - amountReceived: Completed payments from Guardians
-     * - amountToPay: Pending payments to Tutors
-     * - amountPaid: Completed payments to Tutors
+     * **Logic based on Authenticated User Role:**
      *
-     * Role behavior:
-     * - coordinator: Data scoped to their institution.
-     * - admin: Requires institutionId query parameter.
+     * For **admin**:
+     * - Returns global financial summary and admin profit shares.
+     * - \`institutionId\` is optional to filter specific institution class payments.
+     *
+     * For **coordinator**:
+     * - Returns financial summary scoped to their assigned institution and their profit shares.
+     * - Institution ID is automatically inferred from the user credential.
      */
     get: {
       parameters: {
-        query?: {
-          /** @description Filter from this date */
-          startDate?: string;
-          /** @description Filter until this date */
-          endDate?: string;
-          /** @description Required for admin role */
+        query: {
+          /** @description Start date (must be the first day of the month) */
+          startDate: string;
+          /** @description End date (must be the last day of the month) */
+          endDate: string;
+          /** @description Optional filter by institution ID (Only for admin role) */
           institutionId?: number;
         };
       };
@@ -168,15 +168,47 @@ export interface paths {
         200: {
           content: {
             "application/json": {
-              ammountToReceive?: number;
+              ok?: boolean;
+              /** @description Total pending payments from Guardians */
+              amountToReceive?: number;
+              /** @description Total completed payments from Guardians */
               amountReceived?: number;
+              /** @description Total pending payments to Tutors */
               amountToPay?: number;
+              /** @description Total completed payments to Tutors */
               amountPaid?: number;
-              share?: number;
+              /** @description List of admin profit share payments (only if role=admin) */
+              adminPayments?: ({
+                  amount?: number;
+                  /** @enum {string} */
+                  status?: "pending" | "completed";
+                  /** Format: date-time */
+                  period?: string;
+                })[];
+              /** @description List of coordinator profit share payments (only if role=coordinator) */
+              coordinatorPayments?: ({
+                  amount?: number;
+                  /** @enum {string} */
+                  status?: "pending" | "completed";
+                  /** Format: date-time */
+                  period?: string;
+                })[];
+              /** @description Total pending profit share amount for Admin */
+              adminAmountToReceive?: number;
+              /** @description Total completed profit share amount for Admin */
+              adminAmountReceived?: number;
+              /** @description Total pending profit share amount for Coordinator */
+              coordinatorAmountToReceive?: number;
+              /** @description Total completed profit share amount for Coordinator */
+              coordinatorAmountReceived?: number;
             };
           };
         };
-        /** @description Forbidden */
+        /** @description Bad Request (Missing dates, invalid formats, or non-matching start/end dates) */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden (Invalid role or permissions) */
         403: {
           content: never;
         };

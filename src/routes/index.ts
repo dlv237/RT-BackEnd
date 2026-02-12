@@ -17,7 +17,6 @@ export function setRoutes(app: Express) {
   app.get('/health', health)
   app.use('/mail', mailRoutes)
   app.use('/auth', authRoutes)
-  app.use('/cashflow', cashFlowRoutes)
   app.use(requireAuth)
   app.use('/users', userRoutes)
   app.use('/students', authorize(['admin', 'coordinator', 'tutor']), studentRoutes)
@@ -26,4 +25,5 @@ export function setRoutes(app: Express) {
   app.use('/classes', classRoutes)
   app.use('/fees', authorize(['admin', 'coordinator', 'tutor','guardian']), feeRoutes)
   app.use('/tutors', authorize(['admin', 'coordinator']), tutorRoutes)
+  app.use('/cashflow', cashFlowRoutes)
 }

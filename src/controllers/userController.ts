@@ -199,7 +199,9 @@ export async function createUser(req: Request, res: Response, next: NextFunction
         data: {
           coordinatorId: newUser.id,
           institutionId: finalInstitutionId,
-          profitShare: resolvedProfitShare
+          profitShare: resolvedProfitShare,
+          availableSince: new Date(),
+          availableUntil: new Date(new Date().getFullYear()+237, new Date().getMonth(), 0)
         }
       })
     }
@@ -428,10 +430,7 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
     if (user.role === 'coordinator' && user.institutionId) {
       const profit = await prisma.coordinatorProfitShare.findUnique({
         where: {
-          coordinatorId_institutionId: {
-            coordinatorId: Number(user.id),
-            institutionId: Number(user.institutionId)
-          }
+          id: user.id
         },
         select: {
           profitShare: true
