@@ -120,6 +120,8 @@ router.post('/', createUser)
  *       Soft delete a user by marking them as inactive (isActive = false).
  *       - Admins and coordinators can delete users
  *       - Coordinators cannot delete admin or coordinator users
+ *       - Guardians/tutors: cannot deactivate if there are pending payments in the last 2 years
+ *       - Coordinators: cannot deactivate if any of the last 12 months (excluding current) are pending or missing
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -132,7 +134,7 @@ router.post('/', createUser)
  *       204:
  *         description: User deleted successfully (soft delete)
  *       400:
- *         description: Cannot delete due to pending payments
+ *         description: Cannot delete due to pending or missing payments
  *         content:
  *           application/json:
  *             schema:

@@ -924,6 +924,8 @@ export interface paths {
           page?: number;
           /** @description Items per page */
           pageSize?: number;
+          /** @description Include user bank account details */
+          includeBankAccount?: boolean;
         };
       };
       responses: {
@@ -1003,6 +1005,8 @@ export interface paths {
      * @description Soft delete a user by marking them as inactive (isActive = false).
      * - Admins and coordinators can delete users
      * - Coordinators cannot delete admin or coordinator users
+     * - Guardians/tutors: cannot deactivate if there are pending payments in the last 2 years
+     * - Coordinators: cannot deactivate if any of the last 12 months (excluding current) are pending or missing
      */
     delete: {
       parameters: {
@@ -1016,7 +1020,7 @@ export interface paths {
         204: {
           content: never;
         };
-        /** @description Cannot delete due to pending payments */
+        /** @description Cannot delete due to pending or missing payments */
         400: {
           content: {
             "application/json": components["schemas"]["DeleteUserBlockedResponse"];
@@ -1351,8 +1355,20 @@ export interface components {
       ok: boolean;
       message: string;
     };
-    UserWithInstitution: components["schemas"]["User"] & {
+    UserWithInstitution: components["schemas"]["User"] & ({
       Institution?: components["schemas"]["Institution"];
+      BankAccount?: components["schemas"]["UserBankAccount"];
+      coordinatorProfitShares?: components["schemas"]["CoordinatorProfitShare"][] | null;
+    });
+    CoordinatorProfitShare: {
+      id: number;
+      coordinatorId: number;
+      institutionId: number;
+      profitShare: number;
+      /** Format: date-time */
+      createdAt?: string;
+      /** Format: date-time */
+      updatedAt?: string;
     };
     UserBankAccount: {
       id?: number;

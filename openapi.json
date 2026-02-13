@@ -3306,7 +3306,7 @@
     "/users/{id}": {
       "delete": {
         "summary": "Delete a user by ID",
-        "description": "Soft delete a user by marking them as inactive (isActive = false).\n- Admins and coordinators can delete users\n- Coordinators cannot delete admin or coordinator users\n",
+        "description": "Soft delete a user by marking them as inactive (isActive = false).\n- Admins and coordinators can delete users\n- Coordinators cannot delete admin or coordinator users\n- Guardians/tutors: cannot deactivate if there are pending payments in the last 2 years\n- Coordinators: cannot deactivate if any of the last 12 months (excluding current) are pending or missing\n",
         "tags": [
           "Users"
         ],
@@ -3326,7 +3326,7 @@
             "description": "User deleted successfully (soft delete)"
           },
           "400": {
-            "description": "Cannot delete due to pending payments",
+            "description": "Cannot delete due to pending or missing payments",
             "content": {
               "application/json": {
                 "schema": {
