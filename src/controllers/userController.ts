@@ -313,7 +313,7 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
     }
 
     if (user.role === 'admin') {
-      return res.status(403).json({ ok: false, message: 'Admins cannot be deleted.' })
+      return res.status(403).json({ ok: false, message: 'Admins cannot be deactivated.' })
     }
 
     if (user.role === 'coordinator' && userRole !== 'admin') {
@@ -344,7 +344,7 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       if (pendingPayment) {
         return res.status(400).json({
           ok: false,
-          message: 'No se puede eliminar un usuario con pagos pendientes'
+          message: 'No se puede desactivar un usuario con pagos pendientes'
         })
       }
     }
@@ -367,39 +367,50 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       if (pendingPayment) {
         return res.status(400).json({
           ok: false,
-          message: 'No se puede eliminar un tutor con pagos pendientes'
+          message: 'No se puede desactivar un tutor con pagos pendientes'
         })
       }
     }
 
-    // Coordinador: no debe tener pagos pendientes o inexistentes en los ultimos 12 meses,
+    // Coordinador: no debe tener pagos pendientes o inexistentes en los ultimos 24 meses,
     // excluyendo el mes actual.
     if (user.role === 'coordinator') {
-      const periodsToCheck: Array<{ periodYear: number; periodMonth: number }> = []
-      for (let i = 1; i <= 12; i += 1) {
+      const periodsToCheck: Array<{
+        periodYear: number
+        periodMonth: number
+        start: Date
+        end: Date
+      }> = []
+      for (let i = 1; i <= 24; i += 1) {
         const d = new Date(now)
         d.setMonth(d.getMonth() - i)
+        const start = new Date(d.getFullYear(), d.getMonth(), 1)
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 1)
         periodsToCheck.push({
           periodYear: d.getFullYear(),
-          periodMonth: d.getMonth() + 1
+          periodMonth: d.getMonth() + 1,
+          start,
+          end
         })
       }
 
       const payments = await prisma.coordinatorPayment.findMany({
         where: {
           coordinatorId: userId,
-          OR: periodsToCheck
+          OR: periodsToCheck.map((period) => ({
+            period: { gte: period.start, lt: period.end }
+          }))
         },
         select: {
-          periodYear: true,
-          periodMonth: true,
+          period: true,
           status: true
         }
       })
 
       const paymentMap = new Map<string, PaymentStatus>()
-      payments.forEach((payment) => {
-        paymentMap.set(`${payment.periodYear}-${payment.periodMonth}`, payment.status)
+      payments.forEach((payment: { period: Date; status: PaymentStatus }) => {
+        const key = `${payment.period.getFullYear()}-${payment.period.getMonth() + 1}`
+        paymentMap.set(key, payment.status)
       })
 
       const hasMissingOrPending = periodsToCheck.some((period) => {
@@ -411,7 +422,7 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       if (hasMissingOrPending) {
         return res.status(400).json({
           ok: false,
-          message: 'No se puede eliminar un coordinador con pagos pendientes'
+          message: 'No se puede desactivar un coordinador con pagos pendientes'
         })
       }
     }
@@ -796,7 +807,7 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       if (hasClasses) {
         return res.status(400).json({
           ok: false,
-          message: 'No se puede eliminar un usuario con clases asociadas'
+          message: 'No se puede eliminar un apoderado con clases asociadas'
         })
       }
     }
@@ -812,11 +823,11 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       if (hasClasses) {
         return res.status(400).json({
           ok: false,
-          message: 'No se puede eliminar un usuario con clases asociadas'
+          message: 'No se puede eliminar un tutor con clases asociadas'
         })
       }
     }
-
+    // TO DO: Revisar criterio de eliminacion
     if (userRole === 'coordinator') {
       await prisma.user.delete({
         where: {
