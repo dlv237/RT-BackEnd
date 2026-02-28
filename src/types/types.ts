@@ -231,10 +231,10 @@ export interface paths {
     get: {
       parameters: {
         query: {
-          /** @description Start date (must be the first day of the month) */
-          startDate: string;
-          /** @description End date (must be the last day of the month) */
-          endDate: string;
+          /** @description Start month (MM-YYYY) */
+          startDate: components["schemas"]["MonthYear"];
+          /** @description End month (MM-YYYY) */
+          endDate: components["schemas"]["MonthYear"];
           /** @description Optional filter by institution ID (Only for admin role) */
           institutionId?: number;
         };
@@ -310,10 +310,10 @@ export interface paths {
     get: {
       parameters: {
         query: {
-          /** @description Start date (must be the first day of the month) */
-          startDate: string;
-          /** @description End date (must be the last day of the month) */
-          endDate: string;
+          /** @description Start month (MM-YYYY) */
+          startDate: components["schemas"]["MonthYear"];
+          /** @description End month (MM-YYYY) */
+          endDate: components["schemas"]["MonthYear"];
           /** @description The role to filter the details by (e.g. coordinator, tutor, guardian) */
           filteredUserRole?: "coordinator" | "tutor" | "guardian" | "admin";
           /** @description Optional filter by institution ID */
@@ -1393,6 +1393,11 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    /**
+     * @description Month and year in MM-YYYY format
+     * @example 02-2026
+     */
+    MonthYear: string;
     UserLoginRequest: {
       /** Format: email */
       email: string;

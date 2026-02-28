@@ -388,20 +388,18 @@
             "name": "startDate",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "date-time"
+              "$ref": "#/components/schemas/MonthYear"
             },
-            "description": "Start date (must be the first day of the month)"
+            "description": "Start month (MM-YYYY)"
           },
           {
             "in": "query",
             "name": "endDate",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "date-time"
+              "$ref": "#/components/schemas/MonthYear"
             },
-            "description": "End date (must be the last day of the month)"
+            "description": "End month (MM-YYYY)"
           },
           {
             "in": "query",
@@ -528,20 +526,18 @@
             "name": "startDate",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "date-time"
+              "$ref": "#/components/schemas/MonthYear"
             },
-            "description": "Start date (must be the first day of the month)"
+            "description": "Start month (MM-YYYY)"
           },
           {
             "in": "query",
             "name": "endDate",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "date-time"
+              "$ref": "#/components/schemas/MonthYear"
             },
-            "description": "End date (must be the last day of the month)"
+            "description": "End month (MM-YYYY)"
           },
           {
             "in": "query",
@@ -2230,6 +2226,12 @@
   },
   "components": {
     "schemas": {
+      "MonthYear": {
+        "type": "string",
+        "pattern": "^(0[1-9]|1[0-2])-(\\d{4})$",
+        "example": "02-2026",
+        "description": "Month and year in MM-YYYY format"
+      },
       "UserLoginRequest": {
         "type": "object",
         "properties": {

@@ -3,6 +3,15 @@ import { Request, Response, NextFunction } from "express"
 import { UserRole, PaymentStatus } from "@prisma/client"
 import { Decimal } from "@prisma/client/runtime/library"
 
+function parseMonthYear(value: unknown) {
+    if (typeof value !== 'string') return null
+    const match = value.trim().match(/^(0[1-9]|1[0-2])-(\d{4})$/)
+    if (!match) return null
+    const month = Number(match[1])
+    const year = Number(match[2])
+    return { month, year }
+}
+
 export async function getCashFlowSummary(req: Request, res: Response, next: NextFunction){
     const {
         startDate,
@@ -10,33 +19,26 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
     } = req.query
     const role = (req as any).auth.role as UserRole
 
-    // startDate and endDate must be provided and must be valid dates and complete months, so, startDate must be the first day of the month and endDate must be the last day of the month
+    // startDate and endDate must be provided as MM-YYYY; we normalize them to month boundaries.
     if (!startDate || !endDate) {
         return res.status(400).json({ ok: false, message: 'Start date and end date are required' })
     }
 
-    const start = new Date(startDate as string)
-    const end = new Date(endDate as string)
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return res.status(400).json({ ok: false, message: 'Invalid date format' })
+    const startParsed = parseMonthYear(startDate)
+    const endParsed = parseMonthYear(endDate)
+    if (!startParsed || !endParsed) {
+        return res.status(400).json({ ok: false, message: 'Invalid date format, expected MM-YYYY' })
     }
 
-    if (start.getUTCDate() !== 1) {
-        return res.status(400).json({ ok: false, message: 'Start date must be the first day of the month' })
-    }
-
-    const lastDayOfMonth = new Date(end.getUTCFullYear(), end.getUTCMonth() + 1, 0).getDate()
-    if (end.getUTCDate() !== lastDayOfMonth) {
-        return res.status(400).json({ ok: false, message: 'End date must be the last day of the month' })
-    }
+    const start = new Date(Date.UTC(startParsed.year, startParsed.month - 1, 1))
+    const end = new Date(Date.UTC(endParsed.year, endParsed.month, 0, 23, 59, 59, 999))
 
     if (role === 'admin') {
         const adminPayments = await prisma.adminPayment.findMany({
             where: {
                 period: {
-                    gte: new Date(startDate as string),
-                    lte: new Date(endDate as string)
+                    gte: start,
+                    lte: end
                 }
             },
             select: {
@@ -189,8 +191,8 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
                 Class: {
                     institutionId: institutionId ? Number(institutionId) : undefined,
                     date: {
-                        gte: startDate ? new Date(startDate as string) : undefined,
-                        lte: endDate ? new Date(endDate as string) : undefined
+                        gte: start,
+                        lte: end
                     }
                 }
             }
@@ -241,8 +243,8 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
         const coordinatorPayments = await prisma.coordinatorPayment.findMany({
             where: {
                 period: {
-                    gte: new Date(startDate as string),
-                    lte: new Date(endDate as string)
+                    gte: start,
+                    lte: end
                 }
             },
             select: {
@@ -369,8 +371,8 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
                 Class: {
                     institutionId,
                     date: {
-                        gte: startDate ? new Date(startDate as string) : undefined,
-                        lte: endDate ? new Date(endDate as string) : undefined
+                        gte: start,
+                        lte: end
                     }
                 }
             }
@@ -433,21 +435,14 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
         return res.status(400).json({ ok: false, message: 'Start date and end date are required' })
     }
 
-    const start = new Date(startDate as string)
-    const end = new Date(endDate as string)
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        return res.status(400).json({ ok: false, message: 'Invalid date format' })
+    const startParsed = parseMonthYear(startDate)
+    const endParsed = parseMonthYear(endDate)
+    if (!startParsed || !endParsed) {
+        return res.status(400).json({ ok: false, message: 'Invalid date format, expected MM-YYYY' })
     }
 
-    if (start.getUTCDate() !== 1) {
-        return res.status(400).json({ ok: false, message: 'Start date must be the first day of the month' })
-    }
-
-    const lastDayOfMonth = new Date(end.getUTCFullYear(), end.getUTCMonth() + 1, 0).getDate()
-    if (end.getUTCDate() !== lastDayOfMonth) {
-        return res.status(400).json({ ok: false, message: 'End date must be the last day of the month' })
-    }
+    const start = new Date(Date.UTC(startParsed.year, startParsed.month - 1, 1))
+    const end = new Date(Date.UTC(endParsed.year, endParsed.month, 0, 23, 59, 59, 999))
 
     if (role === UserRole.coordinator && (filteredUserRole === UserRole.coordinator || filteredUserRole === UserRole.admin)) {
         return res.status(403).json({ message: 'Coordinator cannot view other coordinators or admin details' })
@@ -654,8 +649,8 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
                             where: {
                                 Class: {
                                     date: {
-                                        gte: new Date(startDate as string),
-                                        lte: new Date(endDate as string)
+                                        gte: start,
+                                        lte: end
                                     }
                                 }
                             },
@@ -695,8 +690,8 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
                         Classes: {
                             some: {
                                 date: {
-                                    gte: new Date(startDate as string),
-                                    lte: new Date(endDate as string)
+                                    gte: start,
+                                    lte: end
                                 }
                             }
                         }
@@ -718,8 +713,8 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
                         Classes: {
                             where: {
                                 date: {
-                                    gte: new Date(startDate as string),
-                                    lte: new Date(endDate as string)
+                                    gte: start,
+                                    lte: end
                                 }
                             },
                             select: {     

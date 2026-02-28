@@ -98,6 +98,12 @@ const options: swaggerJSDoc.Options = {
     },
     components: {
       schemas: {
+        MonthYear: {
+          type: 'string',
+          pattern: '^(0[1-9]|1[0-2])-(\\d{4})$',
+          example: '02-2026',
+          description: 'Month and year in MM-YYYY format'
+        },
         UserLoginRequest: {
           type: 'object',
           properties: {
