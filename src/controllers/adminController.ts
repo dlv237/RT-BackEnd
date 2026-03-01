@@ -15,8 +15,12 @@ export async function editAdminProfitShare(req: Request, res: Response, next: Ne
       return res.status(400).json({ ok: false, message: 'Profit share must be a number between 0 and 100' });
     }
 
-    // Check for each institution if the new admin profit share combined with the current active coordinator profit shares doesn't exceed 100%
+    // New admin share becomes active on the next day at 00:00:00.000 UTC.
+    // Current admin share remains active through today (until 23:59:59.999 UTC).
     const now = new Date();
+    const todayStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayEndUtc = new Date(todayStartUtc.getTime() + 24 * 60 * 60 * 1000 - 1);
+    const nextDayStartUtc = new Date(todayStartUtc.getTime() + 24 * 60 * 60 * 1000);
 
     const institutions = await prisma.institution.findMany({
       select: {
@@ -26,11 +30,12 @@ export async function editAdminProfitShare(req: Request, res: Response, next: Ne
     });
 
     for (const institution of institutions) {
-      // Sum active coordinator profit shares for this institution
+      // Sum coordinator profit shares active at the new admin share effective timestamp
       const activeCoordinatorShares = await prisma.coordinatorProfitShare.findMany({
         where: {
           institutionId: institution.id,
-          availableUntil: { gt: now }
+          availableSince: { lte: nextDayStartUtc },
+          availableUntil: { gte: nextDayStartUtc }
         }
       });
 
@@ -47,10 +52,6 @@ export async function editAdminProfitShare(req: Request, res: Response, next: Ne
       }
     }
 
-    // Use day boundaries so profit share transitions align with class dates (stored at midnight)
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-    const yesterdayEnd = new Date(todayStart.getTime() - 1) // last ms of yesterday
-
     // Use a transaction to deactivate the current profit share and create the new one
     const newAdminProfitShare = await prisma.$transaction(async (tx) => {
       // Find the single currently active admin profit share
@@ -60,19 +61,19 @@ export async function editAdminProfitShare(req: Request, res: Response, next: Ne
         }
       });
 
-      // Deactivate it by setting availableUntil to end of yesterday (avoids overlap with the new share)
+      // Deactivate it at the end of today, so current day keeps the current percentage
       if (currentActive) {
         await tx.adminProfitShare.update({
           where: { id: currentActive.id },
-          data: { availableUntil: yesterdayEnd }
+          data: { availableUntil: todayEndUtc }
         });
       }
 
-      // Create the new admin profit share starting today (midnight), active until far in the future
+      // Create the new admin profit share effective from tomorrow at 00:00:00.000 UTC
       return tx.adminProfitShare.create({
         data: {
           profitShare,
-          availableSince: todayStart,
+          availableSince: nextDayStartUtc,
           availableUntil: new Date('2099-12-31T23:59:59.999Z')
         }
       });
