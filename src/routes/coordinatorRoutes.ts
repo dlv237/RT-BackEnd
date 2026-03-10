@@ -63,13 +63,14 @@ router.patch('/:institutionId/profit-share', editCoordinatorProfitShare)
  *         application/json:
  *           schema:
  *             type: object
- *             required: [coordinatorId]
+ *             required: [coordinatorId, payments]
  *             properties:
  *               coordinatorId:
  *                 type: integer
  *                 description: ID of the coordinator receiving the payments
- *             allOf:
- *               - type: array
+ *               payments:
+ *                 type: array
+ *                 description: One or more payment periods to record
  *                 items:
  *                   type: object
  *                   required: [amount, period]

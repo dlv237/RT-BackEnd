@@ -4,9 +4,6 @@
  */
 
 
-/** WithRequired type helpers */
-type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
-
 /** OneOf type helpers */
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
@@ -429,10 +426,11 @@ export interface paths {
      * For **guardian**:
      * - Returns a list of guardians with their total class payments for the specified period.
      * - Use `filteredGuardianPaymentStatus` to filter:
-     *   - `pending` — only pending (bank transfer) payments.
-     *   - `bankTransfer` — completed bank-transfer payments and all pending ones.
-     *   - `card` — only completed card payments.
-     *   - `completed` — all completed payments regardless of type.
+     *   - `pending` — only guardians with pending (bank transfer) payments.
+     *   - `bankTransfer` — only guardians whose payments are all completed via bank transfer (no pending, no card).
+     *   - `card` — only guardians whose payments are all completed via card (no pending, no bank transfer).
+     *   - `card-transfer` — guardians who have completed payments of **both** card and bank transfer types, with no pending payments.
+     *   - `completed` — all guardians with all payments completed, regardless of type.
      *   - *(omit)* — all guardians.
      * - Each guardian entry includes computed `totalAmount`, `paymentStatus`, and `paymentType`
      *   (`card`, `bankTransfer`, or `null` when mixed / no completed payments).
@@ -461,12 +459,13 @@ export interface paths {
           paymentStatus?: "pending" | "completed";
           /**
            * @description Filter guardian payments by status/type. Only applies when `filteredUserRole` is `guardian`.
-           * - `pending` — pending payments (always bank transfer).
-           * - `bankTransfer` — completed bank-transfer payments plus all pending ones.
-           * - `card` — completed card payments only.
-           * - `completed` — all completed payments regardless of type.
+           * - `pending` — guardians with pending (bank transfer) payments.
+           * - `bankTransfer` — guardians with all completed payments via bank transfer only (no card, no pending).
+           * - `card` — guardians with all completed payments via card only (no bank transfer, no pending).
+           * - `card-transfer` — guardians with both card and bank transfer completed payments, and no pending payments.
+           * - `completed` — guardians with all payments completed, regardless of type.
            */
-          filteredGuardianPaymentStatus?: "pending" | "bankTransfer" | "card" | "completed";
+          filteredGuardianPaymentStatus?: "pending" | "bankTransfer" | "card" | "card-transfer" | "completed";
           /** @description Page number for pagination */
           page?: number;
           /** @description Number of items per page */
@@ -827,18 +826,20 @@ export interface paths {
       };
       requestBody: {
         content: {
-          "application/json": WithRequired<{
+          "application/json": {
             /** @description ID of the coordinator receiving the payments */
             coordinatorId: number;
-          } & {
-              /** @description Payment amount */
-              amount: number;
-              /**
-               * Format: date-time
-               * @description First day of the billing month (UTC)
-               */
-              period: string;
-            }[], "coordinatorId">;
+            /** @description One or more payment periods to record */
+            payments: {
+                /** @description Payment amount */
+                amount: number;
+                /**
+                 * Format: date-time
+                 * @description First day of the billing month (UTC)
+                 */
+                period: string;
+              }[];
+          };
         };
       };
       responses: {

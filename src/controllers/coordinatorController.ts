@@ -110,7 +110,7 @@ export async function makeCoordinatorPayment(req: Request, res: Response, next: 
   try {
     const { institutionId } = req.params;
     const coordinatorId = req.body.coordinatorId;
-    const amounts = req.body as { amount: number, period: Date }[];
+    const amounts = req.body.payments as { amount: number, period: Date }[];
     const userRole = (req as any).auth?.role;
 
     if (userRole !== 'admin') {
