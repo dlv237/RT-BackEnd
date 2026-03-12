@@ -2286,6 +2286,44 @@
             "description": "Link already exists"
           }
         }
+      },
+      "delete": {
+        "summary": "Deactivate a guardian-tutor link",
+        "description": "Soft deletes a guardian-tutor relationship by setting active = false.",
+        "tags": [
+          "Tutors"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteGuardianTutorLinkInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Guardian-tutor link deactivated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteGuardianTutorLinkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Link not found"
+          }
+        }
       }
     },
     "/tutors/{tutorId}/payments": {
@@ -3361,6 +3399,40 @@
         ]
       },
       "CreateGuardianTutorLinkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "link": {
+            "$ref": "#/components/schemas/GuardianTutor"
+          }
+        },
+        "required": [
+          "ok",
+          "link"
+        ]
+      },
+      "DeleteGuardianTutorLinkInput": {
+        "type": "object",
+        "properties": {
+          "guardianId": {
+            "type": "integer"
+          },
+          "tutorId": {
+            "type": "integer"
+          },
+          "institutionId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "guardianId",
+          "tutorId",
+          "institutionId"
+        ]
+      },
+      "DeleteGuardianTutorLinkResponse": {
         "type": "object",
         "properties": {
           "ok": {
