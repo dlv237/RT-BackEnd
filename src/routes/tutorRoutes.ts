@@ -1,5 +1,7 @@
 import { Router } from 'express'
-import { createGuardianTutorLink, editTutorPaymentsFromPeriod } from '../controllers/tutorController'
+import { createGuardianTutorLink, 
+        editTutorPaymentsFromPeriod, 
+        removeGuardianTutorLink } from '../controllers/tutorController'
 
 const router = Router()
 
@@ -91,5 +93,34 @@ router.post('/guardian-links', createGuardianTutorLink)
  *         description: Forbidden
  */
 router.patch('/:tutorId/payments', editTutorPaymentsFromPeriod)
+
+/**
+ * @openapi
+ * /tutors/guardian-links:
+ *   delete:
+ *     summary: Delete a guardian-tutor link
+ *     description: Deletes a guardian-tutor relationship identified by guardianId, tutorId, and institutionId.
+ *     tags: [Tutors]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DeleteGuardianTutorLinkInput'
+ *     responses:
+ *       200:
+ *         description: Guardian-tutor link deactivated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DeleteGuardianTutorLinkResponse'
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Link not found
+ */
+router.delete('/guardian-links', removeGuardianTutorLink)
 
 export default router

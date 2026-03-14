@@ -15,7 +15,7 @@ export async function createGuardianTutorLink(req: Request, res: Response, next:
         const parsedGuardianId = Number(guardianId)
         const parsedTutorId = Number(tutorId)
         const parsedInstitutionId = Number(institutionId)
-
+    
         if (!Number.isFinite(parsedGuardianId) || !Number.isFinite(parsedTutorId)) {
             return res.status(400).json({ ok: false, message: 'Guardian ID and Tutor ID are required' });
         }
@@ -33,7 +33,7 @@ export async function createGuardianTutorLink(req: Request, res: Response, next:
                 })
             }
         }
-
+        
         const created = await prisma.guardianTutor.create({
             data: {
                 guardianId: parsedGuardianId,
@@ -94,4 +94,52 @@ export async function editTutorPaymentsFromPeriod(req: Request, res: Response, n
   } catch (err) {
     next(err)
   }
+}
+
+export async function removeGuardianTutorLink(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { guardianId, tutorId, institutionId } = req.body
+        const userRole = (req as any).auth?.role
+
+        if (userRole !== 'admin' && userRole !== 'coordinator') {
+            return res.status(403).json({ ok: false, message: 'Forbidden' })
+        }
+
+        const parsedGuardianId = Number(guardianId)
+        const parsedTutorId = Number(tutorId)
+        const parsedInstitutionId = Number(institutionId)
+
+        if (!Number.isFinite(parsedGuardianId) || !Number.isFinite(parsedTutorId)) {
+            return res.status(400).json({ ok: false, message: 'Guardian ID and Tutor ID are required' })
+        }
+
+        if (!Number.isFinite(parsedInstitutionId)) {
+            return res.status(400).json({ ok: false, message: 'Institution ID is required' })
+        }
+
+        if (userRole === 'coordinator') {
+            const coordinatorInstitutionId = (req as any).auth?.institutionId
+
+            if (!coordinatorInstitutionId || Number(coordinatorInstitutionId) !== parsedInstitutionId) {
+                return res.status(403).json({
+                    ok: false,
+                    message: 'Coordinators can only manage links for their institution.'
+                })
+            }
+        }
+
+        const updated = await prisma.guardianTutor.delete({
+        where: {
+            guardianId_tutorId_institutionId: {
+            guardianId: parsedGuardianId,
+            tutorId: parsedTutorId,
+            institutionId: parsedInstitutionId
+            }
+        }
+        })
+        return res.status(200).json({ ok: true, link: updated })
+
+    } catch (err) {
+        next(err)
+    }
 }
