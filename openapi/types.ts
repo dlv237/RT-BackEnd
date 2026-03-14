@@ -1215,13 +1215,13 @@ export interface paths {
         /** @description Institution deleted permanently */
         200: {
           content: {
-            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
+            "application/json": components["schemas"]["DeleteInstitutionResponse"];
           };
         };
         /** @description Cannot hard-delete institution */
         400: {
           content: {
-            "application/json": components["schemas"]["HardDeleteInstitutionResponse"];
+            "application/json": components["schemas"]["DeleteInstitutionResponse"];
           };
         };
       };
@@ -1871,7 +1871,7 @@ export interface components {
       ok: boolean;
       canHardDelete: boolean;
     };
-    HardDeleteInstitutionResponse: {
+    DeleteInstitutionResponse: {
       ok: boolean;
       message: string;
     };

@@ -303,7 +303,7 @@ export async function getInstitutionDeletionOptions(req: Request, res: Response,
   }
 }
 
-export async function hardDeleteInstitution(req: Request, res: Response, next: NextFunction) {
+export async function deleteInstitution(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const institutionId = Number(id);

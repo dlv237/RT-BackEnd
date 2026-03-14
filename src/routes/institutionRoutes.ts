@@ -9,7 +9,7 @@ import {
   deactivateInstitution,
   reactivateInstitution,
   getInstitutionDeletionOptions,
-  hardDeleteInstitution,
+  deleteInstitution,
 } from '../controllers/institutionController';
 
 const router = Router();
@@ -236,14 +236,14 @@ router.get('/:id/deletion-options', getInstitutionDeletionOptions);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/HardDeleteInstitutionResponse'
+ *               $ref: '#/components/schemas/DeleteInstitutionResponse'
  *       400:
  *         description: Cannot hard-delete institution
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/HardDeleteInstitutionResponse'
+ *               $ref: '#/components/schemas/DeleteInstitutionResponse'
  */
-router.delete('/:id/hard-delete', hardDeleteInstitution);
+router.delete('/:id/hard-delete', deleteInstitution);
 
 export default router;
