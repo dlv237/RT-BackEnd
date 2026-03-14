@@ -195,7 +195,7 @@ router.patch('/:id/reactivate', reactivateInstitution);
  * /institutions/{id}/deletion-options:
  *   get:
  *     summary: Get deletion options for an institution
- *     description: Returns whether the institution can be hard-deleted (no users associated).
+ *     description: Returns whether the institution can be hard-deleted (no classes associated).
  *     tags: [Institutions]
  *     parameters:
  *       - in: path
@@ -221,7 +221,7 @@ router.get('/:id/deletion-options', getInstitutionDeletionOptions);
  * /institutions/{id}/hard-delete:
  *   delete:
  *     summary: Permanently delete an institution
- *     description: Hard-delete an institution only if it has no users associated.
+ *     description: Hard-delete an institution only if it has no classes associated.
  *     tags: [Institutions]
  *     parameters:
  *       - in: path

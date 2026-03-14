@@ -1176,7 +1176,7 @@ export interface paths {
   "/institutions/{id}/deletion-options": {
     /**
      * Get deletion options for an institution
-     * @description Returns whether the institution can be hard-deleted (no users associated).
+     * @description Returns whether the institution can be hard-deleted (no classes associated).
      */
     get: {
       parameters: {
@@ -1202,7 +1202,7 @@ export interface paths {
   "/institutions/{id}/hard-delete": {
     /**
      * Permanently delete an institution
-     * @description Hard-delete an institution only if it has no users associated.
+     * @description Hard-delete an institution only if it has no classes associated.
      */
     delete: {
       parameters: {
