@@ -12,6 +12,24 @@ function parseMonthYear(value: unknown) {
     return { month, year }
 }
 
+async function getCoordinatorCreationMonthStart(userId: number) {
+    const coordinator = await prisma.user.findFirst({
+        where: {
+            id: userId,
+            role: UserRole.coordinator,
+        },
+        select: { createdAt: true },
+    })
+
+    if (!coordinator) return null
+
+    return new Date(Date.UTC(
+        coordinator.createdAt.getUTCFullYear(),
+        coordinator.createdAt.getUTCMonth(),
+        1,
+    ))
+}
+
 export async function getCashFlowSummary(req: Request, res: Response, next: NextFunction){
     const {
         startDate,
@@ -32,6 +50,22 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
 
     const start = new Date(Date.UTC(startParsed.year, startParsed.month - 1, 1))
     const end = new Date(Date.UTC(endParsed.year, endParsed.month, 0, 23, 59, 59, 999))
+
+    if (role === UserRole.coordinator) {
+        const coordinatorId = Number((req as any).auth.uid)
+        const coordinatorStart = await getCoordinatorCreationMonthStart(coordinatorId)
+
+        if (!coordinatorStart) {
+            return res.status(403).json({ ok: false, message: 'Forbidden' })
+        }
+
+        if (start < coordinatorStart) {
+            return res.status(400).json({
+                ok: false,
+                message: 'Coordinators can only query periods from their creation month onward',
+            })
+        }
+    }
 
     if (role === 'admin') {
         const institutionId = req.query.institutionId ? Number(req.query.institutionId) : undefined
@@ -507,6 +541,22 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
 
     const start = new Date(Date.UTC(startParsed.year, startParsed.month - 1, 1))
     const end = new Date(Date.UTC(endParsed.year, endParsed.month, 0, 23, 59, 59, 999))
+
+    if (role === UserRole.coordinator) {
+        const coordinatorId = Number((req as any).auth.uid)
+        const coordinatorStart = await getCoordinatorCreationMonthStart(coordinatorId)
+
+        if (!coordinatorStart) {
+            return res.status(403).json({ ok: false, message: 'Forbidden' })
+        }
+
+        if (start < coordinatorStart) {
+            return res.status(400).json({
+                ok: false,
+                message: 'Coordinators can only query periods from their creation month onward',
+            })
+        }
+    }
 
     if (role === UserRole.coordinator && (filteredUserRole === UserRole.coordinator || filteredUserRole === UserRole.admin)) {
         return res.status(403).json({ message: 'Coordinator cannot view other coordinators or admin details' })
