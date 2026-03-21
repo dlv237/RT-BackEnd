@@ -478,11 +478,40 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Cash flow details (shape varies by `filteredUserRole`) */
+        /** @description Cash flow details (paginated; shape of `items` varies by `filteredUserRole`) */
         200: {
           content: {
-            "application/json": OneOf<[({
-                coordinator?: {
+            "application/json": OneOf<[{
+              /** @description Total coordinators matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
+                  coordinator?: {
+                    id?: number;
+                    name?: string;
+                    email?: string;
+                    Institution?: {
+                      id?: number;
+                      name?: string;
+                    };
+                  };
+                  coordinatorPayments?: ({
+                      amount?: number;
+                      /** @enum {string} */
+                      status?: "pending" | "completed";
+                      /** Format: date-time */
+                      period?: string;
+                    })[];
+                  /** @description Total profit share amount (pending + completed) for the period */
+                  amount?: number;
+                })[];
+            }, {
+              /** @description Total tutors matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
                   id?: number;
                   name?: string;
                   email?: string;
@@ -490,55 +519,44 @@ export interface paths {
                     id?: number;
                     name?: string;
                   };
-                };
-                coordinatorPayments?: ({
-                    amount?: number;
-                    /** @enum {string} */
-                    status?: "pending" | "completed";
-                    /** Format: date-time */
-                    period?: string;
-                  })[];
-                /** @description Total profit share amount (pending + completed) for the period */
-                amount?: number;
-              })[], ({
-                id?: number;
-                name?: string;
-                email?: string;
-                Institution?: {
+                  /** @description Sum of tutor earnings for the period */
+                  totalAmount?: number;
+                  /**
+                   * @description Overall payment status (pending if any class payment is pending)
+                   * @enum {string}
+                   */
+                  paymentStatus?: "pending" | "completed";
+                })[];
+            }, {
+              /** @description Total guardians matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
                   id?: number;
                   name?: string;
-                };
-                /** @description Sum of tutor earnings for the period */
-                totalAmount?: number;
-                /**
-                 * @description Overall payment status (pending if any class payment is pending)
-                 * @enum {string}
-                 */
-                paymentStatus?: "pending" | "completed";
-              })[], ({
-                id?: number;
-                name?: string;
-                email?: string;
-                Institution?: {
-                  id?: number;
-                  name?: string;
-                };
-                /** @description Sum of guardian payments for the period */
-                totalAmount?: number;
-                /**
-                 * @description Overall payment status (`pending` if any class payment is pending; `No payments` when guardian has no classes in the period)
-                 * @enum {string}
-                 */
-                paymentStatus?: "pending" | "completed" | "No payments";
-                /**
-                 * @description Payment type derived from completed payments.
-                 * `card` or `bankTransfer` if all completed payments share the same type;
-                 * `null` when types are mixed or there are no completed payments.
-                 *
-                 * @enum {string|null}
-                 */
-                paymentType?: "card" | "bankTransfer" | null;
-              })[]]>;
+                  email?: string;
+                  Institution?: {
+                    id?: number;
+                    name?: string;
+                  };
+                  /** @description Sum of guardian payments for the period */
+                  totalAmount?: number;
+                  /**
+                   * @description Overall payment status (`pending` if any class payment is pending; `No payments` when guardian has no classes in the period)
+                   * @enum {string}
+                   */
+                  paymentStatus?: "pending" | "completed" | "No payments";
+                  /**
+                   * @description Payment type derived from completed payments.
+                   * `card` or `bankTransfer` if all completed payments share the same type;
+                   * `null` when types are mixed or there are no completed payments.
+                   *
+                   * @enum {string|null}
+                   */
+                  paymentType?: "card" | "bankTransfer" | null;
+                })[];
+            }]>;
           };
         };
         /** @description Bad Request (Missing dates or invalid date format) */

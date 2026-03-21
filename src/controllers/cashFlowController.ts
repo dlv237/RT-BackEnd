@@ -494,6 +494,8 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
     } = req.query
 
     const role = (req as any).auth.role as UserRole
+    const pageNumber = Number(page) > 0 ? Number(page) : 1
+    const pageSizeNumber = Number(pageSize) > 0 ? Number(pageSize) : 10
     
     if (!startDate || !endDate) {
         return res.status(400).json({ ok: false, message: 'Start date and end date are required' })
@@ -552,8 +554,6 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
                     }
                 }
             },
-            take: pageSize ? Number(pageSize) : undefined,
-            skip: pageSize && page ? (Number(page) - 1) * Number(pageSize) : undefined,
         })
 
         const result = []
@@ -708,7 +708,16 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
             }
         }
 
-        return res.json(result)
+        const total = result.length
+        const startIndex = (pageNumber - 1) * pageSizeNumber
+        const items = result.slice(startIndex, startIndex + pageSizeNumber)
+
+        return res.json({
+            total,
+            page: pageNumber,
+            pageSize: pageSizeNumber,
+            items,
+        })
     }
 
     if (filteredUserRole === UserRole.tutor) {
@@ -753,8 +762,6 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
             orderBy: {
                 name: 'asc'
             },
-            take: pageSize ? Number(pageSize) : undefined,
-            skip: pageSize && page ? (Number(page) - 1) * Number(pageSize) : undefined,
         })
 
         for (const tutor of tutorsAndPayments) {
@@ -768,8 +775,17 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
             (tutor as any).paymentStatus = status;
         }
         
-        console.log('[CashFlow Details - Tutors]', JSON.stringify(tutorsAndPayments, null, 2))
-        return res.json(tutorsAndPayments)
+        const total = tutorsAndPayments.length
+        const startIndex = (pageNumber - 1) * pageSizeNumber
+        const items = tutorsAndPayments.slice(startIndex, startIndex + pageSizeNumber)
+
+        console.log('[CashFlow Details - Tutors]', JSON.stringify({ total, page: pageNumber, pageSize: pageSizeNumber, items }, null, 2))
+        return res.json({
+            total,
+            page: pageNumber,
+            pageSize: pageSizeNumber,
+            items,
+        })
     }
 
     if (filteredUserRole === UserRole.guardian) {
@@ -989,8 +1005,6 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
             orderBy: {
                 name: 'asc'
             },
-            take: pageSize ? Number(pageSize) : undefined,
-            skip: pageSize && page ? (Number(page) - 1) * Number(pageSize) : undefined,
         })
 
         for (const guardian of guardiansAndPayments) {
@@ -1032,7 +1046,16 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
             (guardian as any).paymentType = guardianPaymentType;
         }
         
-        console.log('[CashFlow Details - Guardians]', JSON.stringify(guardiansAndPayments, null, 2))
-        return res.json(guardiansAndPayments)
+        const total = guardiansAndPayments.length
+        const startIndex = (pageNumber - 1) * pageSizeNumber
+        const items = guardiansAndPayments.slice(startIndex, startIndex + pageSizeNumber)
+
+        console.log('[CashFlow Details - Guardians]', JSON.stringify({ total, page: pageNumber, pageSize: pageSizeNumber, items }, null, 2))
+        return res.json({
+            total,
+            page: pageNumber,
+            pageSize: pageSizeNumber,
+            items,
+        })
     }
 }

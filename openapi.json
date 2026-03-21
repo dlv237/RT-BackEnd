@@ -789,18 +789,103 @@
         ],
         "responses": {
           "200": {
-            "description": "Cash flow details (shape varies by `filteredUserRole`)",
+            "description": "Cash flow details (paginated; shape of `items` varies by `filteredUserRole`)",
             "content": {
               "application/json": {
                 "schema": {
                   "oneOf": [
                     {
                       "description": "Response when filteredUserRole=coordinator",
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "coordinator": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "Total coordinators matching filters before pagination"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "pageSize": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "coordinator": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  },
+                                  "Institution": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "integer"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "coordinatorPayments": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "amount": {
+                                      "type": "number"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "pending",
+                                        "completed"
+                                      ]
+                                    },
+                                    "period": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "amount": {
+                                "type": "number",
+                                "description": "Total profit share amount (pending + completed) for the period"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "description": "Response when filteredUserRole=tutor",
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "Total tutors matching filters before pagination"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "pageSize": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
                             "type": "object",
                             "properties": {
                               "id": {
@@ -822,95 +907,41 @@
                                     "type": "string"
                                   }
                                 }
-                              }
-                            }
-                          },
-                          "coordinatorPayments": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "amount": {
-                                  "type": "number"
-                                },
-                                "status": {
-                                  "type": "string",
-                                  "enum": [
-                                    "pending",
-                                    "completed"
-                                  ]
-                                },
-                                "period": {
-                                  "type": "string",
-                                  "format": "date-time"
-                                }
-                              }
-                            }
-                          },
-                          "amount": {
-                            "type": "number",
-                            "description": "Total profit share amount (pending + completed) for the period"
-                          }
-                        }
-                      }
-                    },
-                    {
-                      "description": "Response when filteredUserRole=tutor",
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "integer"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "email": {
-                            "type": "string"
-                          },
-                          "Institution": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "integer"
                               },
-                              "name": {
-                                "type": "string"
+                              "totalAmount": {
+                                "type": "number",
+                                "description": "Sum of tutor earnings for the period"
+                              },
+                              "paymentStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "completed"
+                                ],
+                                "description": "Overall payment status (pending if any class payment is pending)"
                               }
                             }
-                          },
-                          "totalAmount": {
-                            "type": "number",
-                            "description": "Sum of tutor earnings for the period"
-                          },
-                          "paymentStatus": {
-                            "type": "string",
-                            "enum": [
-                              "pending",
-                              "completed"
-                            ],
-                            "description": "Overall payment status (pending if any class payment is pending)"
                           }
                         }
                       }
                     },
                     {
                       "description": "Response when filteredUserRole=guardian",
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "integer"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "email": {
-                            "type": "string"
-                          },
-                          "Institution": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "description": "Total guardians matching filters before pagination"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "pageSize": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
                             "type": "object",
                             "properties": {
                               "id": {
@@ -918,30 +949,44 @@
                               },
                               "name": {
                                 "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "Institution": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "totalAmount": {
+                                "type": "number",
+                                "description": "Sum of guardian payments for the period"
+                              },
+                              "paymentStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "pending",
+                                  "completed",
+                                  "No payments"
+                                ],
+                                "description": "Overall payment status (`pending` if any class payment is pending; `No payments` when guardian has no classes in the period)"
+                              },
+                              "paymentType": {
+                                "type": "string",
+                                "nullable": true,
+                                "enum": [
+                                  "card",
+                                  "bankTransfer"
+                                ],
+                                "description": "Payment type derived from completed payments.\n`card` or `bankTransfer` if all completed payments share the same type;\n`null` when types are mixed or there are no completed payments.\n"
                               }
                             }
-                          },
-                          "totalAmount": {
-                            "type": "number",
-                            "description": "Sum of guardian payments for the period"
-                          },
-                          "paymentStatus": {
-                            "type": "string",
-                            "enum": [
-                              "pending",
-                              "completed",
-                              "No payments"
-                            ],
-                            "description": "Overall payment status (`pending` if any class payment is pending; `No payments` when guardian has no classes in the period)"
-                          },
-                          "paymentType": {
-                            "type": "string",
-                            "nullable": true,
-                            "enum": [
-                              "card",
-                              "bankTransfer"
-                            ],
-                            "description": "Payment type derived from completed payments.\n`card` or `bankTransfer` if all completed payments share the same type;\n`null` when types are mixed or there are no completed payments.\n"
                           }
                         }
                       }
