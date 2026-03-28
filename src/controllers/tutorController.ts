@@ -75,6 +75,19 @@ export async function editTutorPaymentsFromPeriod(req: Request, res: Response, n
         return res.status(400).json({ ok: false, message: 'Invalid periodStart or periodEnd format' });
     }
 
+        if (status === PaymentStatus.completed) {
+            const rangeStart = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1))
+            const rangeEnd = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth() + 1, 1))
+            const currentMonthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1))
+            const nextMonthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1))
+
+            const includesCurrentMonth = rangeStart < nextMonthStart && rangeEnd > currentMonthStart
+
+            if (includesCurrentMonth) {
+                return res.status(400).json({ ok: false, message: 'No se puede pagar el mes en curso a un tutor' })
+            }
+        }
+
     const updatedPayments = await prisma.classPayment.updateMany({
       where: {
         Class: {
