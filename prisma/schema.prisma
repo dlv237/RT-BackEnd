@@ -88,7 +88,6 @@ model CoordinatorPayment {
   Coordinator   User     @relation(fields: [coordinatorId], references: [id])
   Institution   Institution @relation(fields: [institutionId], references: [id])
 
-  @@unique([institutionId, period])
   @@index([period])
 }
 
