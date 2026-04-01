@@ -10,6 +10,75 @@ type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> &
 type OneOf<T extends any[]> = T extends [infer Only] ? Only : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]> : never;
 
 export interface paths {
+  "/users": {
+    /** List users */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Filter by user role */
+          role?: "admin" | "coordinator" | "tutor" | "guardian";
+          /** @description Filter by institution id */
+          institutionId?: number;
+          /** @description Case-insensitive search in name or email */
+          nameOrEmail?: string;
+          /** @description If false, only active users are returned. If true or omitted, returns all. */
+          sendInactive?: boolean;
+          /** @description Page number (1-based) */
+          page?: number;
+          /** @description Items per page */
+          pageSize?: number;
+          /** @description If true, returns all users that match filters and ignores page/pageSize. */
+          all?: boolean;
+          /** @description Include user bank account details */
+          includeBankAccount?: boolean;
+        };
+      };
+      responses: {
+        /** @description List of users */
+        200: {
+          content: {
+            "application/json": components["schemas"]["UserWithInstitution"][];
+          };
+        };
+      };
+    };
+    /**
+     * Create a user
+     * @description Create a new user in the system.
+     * - Only admins or coordinators can create users
+     * - Coordinators cannot create admin or coordinator users
+     * - Admins must provide the institution ID
+     * - Coordinators automatically use their own institution
+     * - Initial password is set to the RUT number without the verifying digit
+     * - Email must be unique (database constraint)
+     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
+     * - Only coordinator users can include coordinatorProfitShare
+     * - Phone, address, and chargeEmail are optional
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateUserWithBankAccountInput"];
+        };
+      };
+      responses: {
+        /** @description User created successfully */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateUserResponse"];
+          };
+        };
+        /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden - insufficient permissions */
+        403: {
+          content: never;
+        };
+      };
+    };
+  };
   "/users/deactivate/{id}/{role}": {
     /**
      * Deactivate a user by ID
@@ -1538,73 +1607,6 @@ export interface paths {
           content: never;
         };
         /** @description Forbidden */
-        403: {
-          content: never;
-        };
-      };
-    };
-  };
-  "/users": {
-    /** List users */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Filter by user role */
-          role?: "admin" | "coordinator" | "tutor" | "guardian";
-          /** @description Filter by institution id */
-          institutionId?: number;
-          /** @description Case-insensitive search in name or email */
-          nameOrEmail?: string;
-          /** @description If false, only active users are returned. If true or omitted, returns all. */
-          sendInactive?: boolean;
-          /** @description Page number (1-based) */
-          page?: number;
-          /** @description Items per page */
-          pageSize?: number;
-          /** @description Include user bank account details */
-          includeBankAccount?: boolean;
-        };
-      };
-      responses: {
-        /** @description List of users */
-        200: {
-          content: {
-            "application/json": components["schemas"]["UserWithInstitution"][];
-          };
-        };
-      };
-    };
-    /**
-     * Create a user
-     * @description Create a new user in the system.
-     * - Only admins or coordinators can create users
-     * - Coordinators cannot create admin or coordinator users
-     * - Admins must provide the institution ID
-     * - Coordinators automatically use their own institution
-     * - Initial password is set to the RUT number without the verifying digit
-     * - Email must be unique (database constraint)
-     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
-     * - Only coordinator users can include coordinatorProfitShare
-     * - Phone, address, and chargeEmail are optional
-     */
-    post: {
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateUserWithBankAccountInput"];
-        };
-      };
-      responses: {
-        /** @description User created successfully */
-        201: {
-          content: {
-            "application/json": components["schemas"]["CreateUserResponse"];
-          };
-        };
-        /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
-        400: {
-          content: never;
-        };
-        /** @description Forbidden - insufficient permissions */
         403: {
           content: never;
         };

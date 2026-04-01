@@ -60,6 +60,12 @@ const router = Router()
  *           default: 10
  *         description: Items per page
  *       - in: query
+ *         name: all
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: If true, returns all users that match filters and ignores page/pageSize.
+ *       - in: query
  *         name: includeBankAccount
  *         schema:
  *           type: boolean

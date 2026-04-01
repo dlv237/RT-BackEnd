@@ -11,6 +11,93 @@ const options: swaggerJSDoc.Options = {
       { url: `http://localhost:${process.env.PORT || 3000}` }
     ],
     paths: {
+      '/users': {
+        get: {
+          summary: 'List users',
+          tags: ['Users'],
+          parameters: [
+            {
+              in: 'query',
+              name: 'role',
+              schema: {
+                type: 'string',
+                enum: ['admin', 'coordinator', 'tutor', 'guardian']
+              },
+              description: 'Filter by user role'
+            },
+            {
+              in: 'query',
+              name: 'institutionId',
+              schema: { type: 'integer' },
+              description: 'Filter by institution id'
+            },
+            {
+              in: 'query',
+              name: 'nameOrEmail',
+              schema: { type: 'string' },
+              description: 'Case-insensitive search in name or email'
+            },
+            {
+              in: 'query',
+              name: 'sendInactive',
+              schema: { type: 'boolean' },
+              description: 'If false, only active users are returned. If true or omitted, returns all.'
+            },
+            {
+              in: 'query',
+              name: 'page',
+              schema: {
+                type: 'integer',
+                minimum: 1,
+                default: 1
+              },
+              description: 'Page number (1-based)'
+            },
+            {
+              in: 'query',
+              name: 'pageSize',
+              schema: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 100,
+                default: 10
+              },
+              description: 'Items per page'
+            },
+            {
+              in: 'query',
+              name: 'all',
+              schema: {
+                type: 'boolean',
+                default: false
+              },
+              description: 'If true, returns all users that match filters and ignores page/pageSize.'
+            },
+            {
+              in: 'query',
+              name: 'includeBankAccount',
+              schema: {
+                type: 'boolean',
+                default: false
+              },
+              description: 'Include user bank account details'
+            }
+          ],
+          responses: {
+            200: {
+              description: 'List of users',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'array',
+                    items: { $ref: '#/components/schemas/UserWithInstitution' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/users/deactivate/{id}/{role}': {
         patch: {
           summary: 'Deactivate a user by ID',
