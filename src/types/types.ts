@@ -10,6 +10,75 @@ type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> &
 type OneOf<T extends any[]> = T extends [infer Only] ? Only : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]> : never;
 
 export interface paths {
+  "/users": {
+    /** List users */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Filter by user role */
+          role?: "admin" | "coordinator" | "tutor" | "guardian";
+          /** @description Filter by institution id */
+          institutionId?: number;
+          /** @description Case-insensitive search in name or email */
+          nameOrEmail?: string;
+          /** @description If false, only active users are returned. If true or omitted, returns all. */
+          sendInactive?: boolean;
+          /** @description Page number (1-based) */
+          page?: number;
+          /** @description Items per page */
+          pageSize?: number;
+          /** @description If true, returns all users that match filters and ignores page/pageSize. */
+          all?: boolean;
+          /** @description Include user bank account details */
+          includeBankAccount?: boolean;
+        };
+      };
+      responses: {
+        /** @description List of users */
+        200: {
+          content: {
+            "application/json": components["schemas"]["UserWithInstitution"][];
+          };
+        };
+      };
+    };
+    /**
+     * Create a user
+     * @description Create a new user in the system.
+     * - Only admins or coordinators can create users
+     * - Coordinators cannot create admin or coordinator users
+     * - Admins must provide the institution ID
+     * - Coordinators automatically use their own institution
+     * - Initial password is set to the RUT number without the verifying digit
+     * - Email must be unique (database constraint)
+     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
+     * - Only coordinator users can include coordinatorProfitShare
+     * - Phone, address, and chargeEmail are optional
+     */
+    post: {
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["CreateUserWithBankAccountInput"];
+        };
+      };
+      responses: {
+        /** @description User created successfully */
+        201: {
+          content: {
+            "application/json": components["schemas"]["CreateUserResponse"];
+          };
+        };
+        /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
+        400: {
+          content: never;
+        };
+        /** @description Forbidden - insufficient permissions */
+        403: {
+          content: never;
+        };
+      };
+    };
+  };
   "/users/deactivate/{id}/{role}": {
     /**
      * Deactivate a user by ID
@@ -432,10 +501,12 @@ export interface paths {
      *   - `bankTransfer` — only guardians whose payments are all completed via bank transfer (no pending, no card).
      *   - `card` — only guardians whose payments are all completed via card (no pending, no bank transfer).
      *   - `card-transfer` — guardians who have completed payments of **both** card and bank transfer types, with no pending payments.
+     *   - `No payments` — guardians with no students/classes in the selected period.
      *   - `completed` — all guardians with all payments completed, regardless of type.
-     *   - *(omit)* — all guardians.
+     *   - *(omit)* — all guardians, including those with `No payments`.
      * - Each guardian entry includes computed `totalAmount`, `paymentStatus`, and `paymentType`
      *   (`card`, `bankTransfer`, or `null` when mixed / no completed payments).
+     *   `paymentStatus` can be `pending`, `completed`, or `No payments`.
      *
      * For **admin**:
      * - Admin details are already included in the `/cashflow/summary` response.
@@ -466,8 +537,9 @@ export interface paths {
            * - `card` — guardians with all completed payments via card only (no bank transfer, no pending).
            * - `card-transfer` — guardians with both card and bank transfer completed payments, and no pending payments.
            * - `completed` — guardians with all payments completed, regardless of type.
+           * - `No payments` — guardians without classes in the selected period.
            */
-          filteredGuardianPaymentStatus?: "pending" | "bankTransfer" | "card" | "card-transfer" | "completed";
+          filteredGuardianPaymentStatus?: "pending" | "bankTransfer" | "card" | "card-transfer" | "completed" | "No payments";
           /** @description Page number for pagination */
           page?: number;
           /** @description Number of items per page */
@@ -475,11 +547,40 @@ export interface paths {
         };
       };
       responses: {
-        /** @description Cash flow details (shape varies by `filteredUserRole`) */
+        /** @description Cash flow details (paginated; shape of `items` varies by `filteredUserRole`) */
         200: {
           content: {
-            "application/json": OneOf<[({
-                coordinator?: {
+            "application/json": OneOf<[{
+              /** @description Total coordinators matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
+                  coordinator?: {
+                    id?: number;
+                    name?: string;
+                    email?: string;
+                    Institution?: {
+                      id?: number;
+                      name?: string;
+                    };
+                  };
+                  coordinatorPayments?: ({
+                      amount?: number;
+                      /** @enum {string} */
+                      status?: "pending" | "completed";
+                      /** Format: date-time */
+                      period?: string;
+                    })[];
+                  /** @description Total profit share amount (pending + completed) for the period */
+                  amount?: number;
+                })[];
+            }, {
+              /** @description Total tutors matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
                   id?: number;
                   name?: string;
                   email?: string;
@@ -487,55 +588,44 @@ export interface paths {
                     id?: number;
                     name?: string;
                   };
-                };
-                coordinatorPayments?: ({
-                    amount?: number;
-                    /** @enum {string} */
-                    status?: "pending" | "completed";
-                    /** Format: date-time */
-                    period?: string;
-                  })[];
-                /** @description Total profit share amount (pending + completed) for the period */
-                amount?: number;
-              })[], ({
-                id?: number;
-                name?: string;
-                email?: string;
-                Institution?: {
+                  /** @description Sum of tutor earnings for the period */
+                  totalAmount?: number;
+                  /**
+                   * @description Overall payment status (pending if any class payment is pending)
+                   * @enum {string}
+                   */
+                  paymentStatus?: "pending" | "completed";
+                })[];
+            }, {
+              /** @description Total guardians matching filters before pagination */
+              total?: number;
+              page?: number;
+              pageSize?: number;
+              items?: ({
                   id?: number;
                   name?: string;
-                };
-                /** @description Sum of tutor earnings for the period */
-                totalAmount?: number;
-                /**
-                 * @description Overall payment status (pending if any class payment is pending)
-                 * @enum {string}
-                 */
-                paymentStatus?: "pending" | "completed";
-              })[], ({
-                id?: number;
-                name?: string;
-                email?: string;
-                Institution?: {
-                  id?: number;
-                  name?: string;
-                };
-                /** @description Sum of guardian payments for the period */
-                totalAmount?: number;
-                /**
-                 * @description Overall payment status (pending if any class payment is pending)
-                 * @enum {string}
-                 */
-                paymentStatus?: "pending" | "completed";
-                /**
-                 * @description Payment type derived from completed payments.
-                 * `card` or `bankTransfer` if all completed payments share the same type;
-                 * `null` when types are mixed or there are no completed payments.
-                 *
-                 * @enum {string|null}
-                 */
-                paymentType?: "card" | "bankTransfer" | null;
-              })[]]>;
+                  email?: string;
+                  Institution?: {
+                    id?: number;
+                    name?: string;
+                  };
+                  /** @description Sum of guardian payments for the period */
+                  totalAmount?: number;
+                  /**
+                   * @description Overall payment status (`pending` if any class payment is pending; `No payments` when guardian has no classes in the period)
+                   * @enum {string}
+                   */
+                  paymentStatus?: "pending" | "completed" | "No payments";
+                  /**
+                   * @description Payment type derived from completed payments.
+                   * `card` or `bankTransfer` if all completed payments share the same type;
+                   * `null` when types are mixed or there are no completed payments.
+                   *
+                   * @enum {string|null}
+                   */
+                  paymentType?: "card" | "bankTransfer" | null;
+                })[];
+            }]>;
           };
         };
         /** @description Bad Request (Missing dates or invalid date format) */
@@ -1523,73 +1613,6 @@ export interface paths {
       };
     };
   };
-  "/users": {
-    /** List users */
-    get: {
-      parameters: {
-        query?: {
-          /** @description Filter by user role */
-          role?: "admin" | "coordinator" | "tutor" | "guardian";
-          /** @description Filter by institution id */
-          institutionId?: number;
-          /** @description Case-insensitive search in name or email */
-          nameOrEmail?: string;
-          /** @description If false, only active users are returned. If true or omitted, returns all. */
-          sendInactive?: boolean;
-          /** @description Page number (1-based) */
-          page?: number;
-          /** @description Items per page */
-          pageSize?: number;
-          /** @description Include user bank account details */
-          includeBankAccount?: boolean;
-        };
-      };
-      responses: {
-        /** @description List of users */
-        200: {
-          content: {
-            "application/json": components["schemas"]["UserWithInstitution"][];
-          };
-        };
-      };
-    };
-    /**
-     * Create a user
-     * @description Create a new user in the system.
-     * - Only admins or coordinators can create users
-     * - Coordinators cannot create admin or coordinator users
-     * - Admins must provide the institution ID
-     * - Coordinators automatically use their own institution
-     * - Initial password is set to the RUT number without the verifying digit
-     * - Email must be unique (database constraint)
-     * - For coordinators, coordinatorProfitShare defaults to 30% if not provided
-     * - Only coordinator users can include coordinatorProfitShare
-     * - Phone, address, and chargeEmail are optional
-     */
-    post: {
-      requestBody: {
-        content: {
-          "application/json": components["schemas"]["CreateUserWithBankAccountInput"];
-        };
-      };
-      responses: {
-        /** @description User created successfully */
-        201: {
-          content: {
-            "application/json": components["schemas"]["CreateUserResponse"];
-          };
-        };
-        /** @description Invalid input or validation error (missing required fields, invalid email format, or database constraint violation) */
-        400: {
-          content: never;
-        };
-        /** @description Forbidden - insufficient permissions */
-        403: {
-          content: never;
-        };
-      };
-    };
-  };
   "/users/{id}/delete/{role}": {
     /**
      * Permanently delete a user by ID
@@ -2098,6 +2121,10 @@ export interface components {
     ClassType: "school" | "university" | "cancelled";
     /** @enum {string} */
     PaymentStatus: "completed" | "pending";
+    /** @enum {string} */
+    GuardianCashFlowPaymentStatus: "completed" | "pending" | "No payments";
+    /** @enum {string} */
+    GuardianFilteredPaymentStatus: "pending" | "bankTransfer" | "card" | "card-transfer" | "completed" | "No payments";
     /** @enum {string} */
     PaymentType: "card" | "bankTransfer";
     Class: {

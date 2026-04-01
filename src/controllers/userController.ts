@@ -20,6 +20,8 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
 
     const includeBankAccount = _req.query.includeBankAccount === 'true'
 
+    const all = _req.query.all === 'true'
+
     const users = await prisma.user.findMany({
       where: {
         isActive: sendInactive ? undefined : true,
@@ -30,8 +32,8 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
           { email: { contains: String(nameOrEmail), mode: 'insensitive' } }
         ] : undefined
       },
-      skip: (Number(page) - 1) * Number(pageSize),
-      take: Number(pageSize),
+      skip: all ? undefined : (Number(page) - 1) * Number(pageSize),
+      take: all ? undefined : Number(pageSize),
       include: {
         Institution: true,
         coordinatorProfitShares: role === UserRole.coordinator,
