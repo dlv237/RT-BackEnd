@@ -545,9 +545,17 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
     }
 
     if (user.role === 'coordinator' && user.institutionId) {
-      const profit = await prisma.coordinatorProfitShare.findUnique({
+      const now = new Date()
+      const profit = await prisma.coordinatorProfitShare.findFirst({
         where: {
-          id: user.id
+          coordinatorId: user.id,
+          institutionId: user.institutionId,
+          availableSince: {
+            lte: now
+          },
+          availableUntil: {
+            gt: now
+          }
         },
         select: {
           profitShare: true
