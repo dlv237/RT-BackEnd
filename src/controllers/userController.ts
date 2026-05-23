@@ -371,9 +371,24 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Coordinador: no debe tener pagos pendientes o inexistentes en los ultimos 24 meses,
-    // excluyendo el mes actual.
+    // Coordinador: pagos pendientes o faltantes solo en meses completos desde su alta
+    // (max. 24 meses hacia atras, excluyendo el mes actual).
     if (role === 'coordinator') {
+      const coordinator = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, createdAt: true },
+      })
+
+      if (!coordinator || coordinator.role !== 'coordinator') {
+        return res.status(404).json({ ok: false, message: 'User not found' })
+      }
+
+      const coordinatorStartMonth = new Date(
+        coordinator.createdAt.getFullYear(),
+        coordinator.createdAt.getMonth(),
+        1,
+      )
+
       const periodsToCheck: Array<{
         periodYear: number
         periodMonth: number
@@ -384,45 +399,48 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
         const d = new Date(now)
         d.setMonth(d.getMonth() - i)
         const start = new Date(d.getFullYear(), d.getMonth(), 1)
-        const end = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+        if (start < coordinatorStartMonth) break
+
         periodsToCheck.push({
           periodYear: d.getFullYear(),
           periodMonth: d.getMonth() + 1,
           start,
-          end
+          end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
         })
       }
 
-      const payments = await prisma.coordinatorPayment.findMany({
-        where: {
-          coordinatorId: userId,
-          OR: periodsToCheck.map((period) => ({
-            period: { gte: period.start, lt: period.end }
-          }))
-        },
-        select: {
-          period: true,
-          status: true
-        }
-      })
-
-      const paymentMap = new Map<string, PaymentStatus>()
-      payments.forEach((payment: { period: Date; status: PaymentStatus }) => {
-        const key = `${payment.period.getFullYear()}-${payment.period.getMonth() + 1}`
-        paymentMap.set(key, payment.status)
-      })
-
-      const hasMissingOrPending = periodsToCheck.some((period) => {
-        const key = `${period.periodYear}-${period.periodMonth}`
-        const status = paymentMap.get(key)
-        return !status || status === PaymentStatus.pending
-      })
-
-      if (hasMissingOrPending) {
-        return res.status(400).json({
-          ok: false,
-          message: 'No se puede desactivar un coordinador con pagos pendientes'
+      if (periodsToCheck.length > 0) {
+        const payments = await prisma.coordinatorPayment.findMany({
+          where: {
+            coordinatorId: userId,
+            OR: periodsToCheck.map((period) => ({
+              period: { gte: period.start, lt: period.end },
+            })),
+          },
+          select: {
+            period: true,
+            status: true,
+          },
         })
+
+        const paymentMap = new Map<string, PaymentStatus>()
+        payments.forEach((payment: { period: Date; status: PaymentStatus }) => {
+          const key = `${payment.period.getFullYear()}-${payment.period.getMonth() + 1}`
+          paymentMap.set(key, payment.status)
+        })
+
+        const hasMissingOrPending = periodsToCheck.some((period) => {
+          const key = `${period.periodYear}-${period.periodMonth}`
+          const status = paymentMap.get(key)
+          return !status || status === PaymentStatus.pending
+        })
+
+        if (hasMissingOrPending) {
+          return res.status(400).json({
+            ok: false,
+            message: 'No se puede desactivar un coordinador con pagos pendientes',
+          })
+        }
       }
     }
 
