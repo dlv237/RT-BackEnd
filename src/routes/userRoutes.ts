@@ -266,6 +266,8 @@ router.patch('/:id/reactivate/:role', reactivateUser)
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/UserByIdResponse'
+ *       403:
+ *         description: Forbidden - caller cannot read this user
  *       404:
  *         description: User not found
  */

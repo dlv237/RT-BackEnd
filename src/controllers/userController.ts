@@ -4,6 +4,53 @@ import argon2 from 'argon2';
 import { AccountType, PaymentStatus, UserRole } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
+type AuthPayload = {
+  uid?: number | string
+  role?: UserRole
+  institutionId?: number | null
+}
+
+function parseRouteId(value: string | string[] | undefined): number | null {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (!raw) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getAuth(req: Request): AuthPayload | undefined {
+  return (req as Request & { auth?: AuthPayload }).auth
+}
+
+/** Whether the authenticated user may read GET /users/:id for the given target id. */
+function canRequesterReadUser(
+  auth: AuthPayload | undefined,
+  targetUserId: number,
+  target: { role: UserRole; institutionId: number | null },
+): boolean {
+  if (!auth?.role) return false
+
+  const requesterId = Number(auth.uid)
+  if (!Number.isFinite(requesterId)) return false
+
+  if (auth.role === UserRole.admin) return true
+
+  if (auth.role === UserRole.coordinator) {
+    if (target.role === UserRole.admin) return false
+    const requesterInstitutionId =
+      auth.institutionId != null ? Number(auth.institutionId) : null
+    return (
+      requesterInstitutionId != null &&
+      target.institutionId === requesterInstitutionId
+    )
+  }
+
+  if (auth.role === UserRole.tutor || auth.role === UserRole.guardian) {
+    return requesterId === targetUserId
+  }
+
+  return false
+}
+
 export async function getUsers(_req: Request, res: Response, next: NextFunction) {
   try {
     const { 
@@ -516,9 +563,11 @@ export async function reactivateUser(req: Request, res: Response, next: NextFunc
 
 export async function getUserById(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params
-    
-    const userId = Number(id);
+    const userId = parseRouteId(req.params.id)
+    if (userId === null) {
+      return res.status(400).json({ ok: false, message: 'Invalid user ID' })
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -554,6 +603,11 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
         ok: false,
         message: 'User not found.'
       });
+    }
+
+    const auth = getAuth(req)
+    if (!canRequesterReadUser(auth, userId, user)) {
+      return res.status(403).json({ ok: false, message: 'Forbidden' })
     }
 
     const response = { ...user } as typeof user & { coordinatorProfitShare?: number; adminProfitShare?: number }
