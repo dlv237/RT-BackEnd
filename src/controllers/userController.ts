@@ -4,6 +4,53 @@ import argon2 from 'argon2';
 import { AccountType, PaymentStatus, UserRole } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
+type AuthPayload = {
+  uid?: number | string
+  role?: UserRole
+  institutionId?: number | null
+}
+
+function parseRouteId(value: string | string[] | undefined): number | null {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (!raw) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getAuth(req: Request): AuthPayload | undefined {
+  return (req as Request & { auth?: AuthPayload }).auth
+}
+
+/** Whether the authenticated user may read GET /users/:id for the given target id. */
+function canRequesterReadUser(
+  auth: AuthPayload | undefined,
+  targetUserId: number,
+  target: { role: UserRole; institutionId: number | null },
+): boolean {
+  if (!auth?.role) return false
+
+  const requesterId = Number(auth.uid)
+  if (!Number.isFinite(requesterId)) return false
+
+  if (auth.role === UserRole.admin) return true
+
+  if (auth.role === UserRole.coordinator) {
+    if (target.role === UserRole.admin) return false
+    const requesterInstitutionId =
+      auth.institutionId != null ? Number(auth.institutionId) : null
+    return (
+      requesterInstitutionId != null &&
+      target.institutionId === requesterInstitutionId
+    )
+  }
+
+  if (auth.role === UserRole.tutor || auth.role === UserRole.guardian) {
+    return requesterId === targetUserId
+  }
+
+  return false
+}
+
 export async function getUsers(_req: Request, res: Response, next: NextFunction) {
   try {
     const { 
@@ -371,9 +418,24 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Coordinador: no debe tener pagos pendientes o inexistentes en los ultimos 24 meses,
-    // excluyendo el mes actual.
+    // Coordinador: pagos pendientes o faltantes solo en meses completos desde su alta
+    // (max. 24 meses hacia atras, excluyendo el mes actual).
     if (role === 'coordinator') {
+      const coordinator = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true, createdAt: true },
+      })
+
+      if (!coordinator || coordinator.role !== 'coordinator') {
+        return res.status(404).json({ ok: false, message: 'User not found' })
+      }
+
+      const coordinatorStartMonth = new Date(
+        coordinator.createdAt.getFullYear(),
+        coordinator.createdAt.getMonth(),
+        1,
+      )
+
       const periodsToCheck: Array<{
         periodYear: number
         periodMonth: number
@@ -384,45 +446,48 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
         const d = new Date(now)
         d.setMonth(d.getMonth() - i)
         const start = new Date(d.getFullYear(), d.getMonth(), 1)
-        const end = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+        if (start < coordinatorStartMonth) break
+
         periodsToCheck.push({
           periodYear: d.getFullYear(),
           periodMonth: d.getMonth() + 1,
           start,
-          end
+          end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
         })
       }
 
-      const payments = await prisma.coordinatorPayment.findMany({
-        where: {
-          coordinatorId: userId,
-          OR: periodsToCheck.map((period) => ({
-            period: { gte: period.start, lt: period.end }
-          }))
-        },
-        select: {
-          period: true,
-          status: true
-        }
-      })
-
-      const paymentMap = new Map<string, PaymentStatus>()
-      payments.forEach((payment: { period: Date; status: PaymentStatus }) => {
-        const key = `${payment.period.getFullYear()}-${payment.period.getMonth() + 1}`
-        paymentMap.set(key, payment.status)
-      })
-
-      const hasMissingOrPending = periodsToCheck.some((period) => {
-        const key = `${period.periodYear}-${period.periodMonth}`
-        const status = paymentMap.get(key)
-        return !status || status === PaymentStatus.pending
-      })
-
-      if (hasMissingOrPending) {
-        return res.status(400).json({
-          ok: false,
-          message: 'No se puede desactivar un coordinador con pagos pendientes'
+      if (periodsToCheck.length > 0) {
+        const payments = await prisma.coordinatorPayment.findMany({
+          where: {
+            coordinatorId: userId,
+            OR: periodsToCheck.map((period) => ({
+              period: { gte: period.start, lt: period.end },
+            })),
+          },
+          select: {
+            period: true,
+            status: true,
+          },
         })
+
+        const paymentMap = new Map<string, PaymentStatus>()
+        payments.forEach((payment: { period: Date; status: PaymentStatus }) => {
+          const key = `${payment.period.getFullYear()}-${payment.period.getMonth() + 1}`
+          paymentMap.set(key, payment.status)
+        })
+
+        const hasMissingOrPending = periodsToCheck.some((period) => {
+          const key = `${period.periodYear}-${period.periodMonth}`
+          const status = paymentMap.get(key)
+          return !status || status === PaymentStatus.pending
+        })
+
+        if (hasMissingOrPending) {
+          return res.status(400).json({
+            ok: false,
+            message: 'No se puede desactivar un coordinador con pagos pendientes',
+          })
+        }
       }
     }
 
@@ -498,9 +563,11 @@ export async function reactivateUser(req: Request, res: Response, next: NextFunc
 
 export async function getUserById(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params
-    
-    const userId = Number(id);
+    const userId = parseRouteId(req.params.id)
+    if (userId === null) {
+      return res.status(400).json({ ok: false, message: 'Invalid user ID' })
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -536,6 +603,11 @@ export async function getUserById(req: Request, res: Response, next: NextFunctio
         ok: false,
         message: 'User not found.'
       });
+    }
+
+    const auth = getAuth(req)
+    if (!canRequesterReadUser(auth, userId, user)) {
+      return res.status(403).json({ ok: false, message: 'Forbidden' })
     }
 
     const response = { ...user } as typeof user & { coordinatorProfitShare?: number; adminProfitShare?: number }
