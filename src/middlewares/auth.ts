@@ -18,7 +18,6 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       // Allow Swagger UI to bypass auth in development
       const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
       const isSwagger = req.headers.referer?.includes('/docs')
-      console.log({isDev, isSwagger});
       if (isDev && isSwagger) {
         // Mock an admin user for Swagger requests
         ;(req as any).auth = { role: 'admin', sub: 'swagger-dev' }

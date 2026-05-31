@@ -22,7 +22,6 @@ const MailRequestSchema = z.object({
 export async function postMail(req: Request, res: Response, next: NextFunction) {
   try {
     const data = MailRequestSchema.parse(req.body)
-    console.log('data', data)
 
     const result = await sendEmail({
       to: data.to,

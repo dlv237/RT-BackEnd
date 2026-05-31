@@ -257,8 +257,6 @@ export async function requestPasswordReset(req: Request, res: Response) {
     select: { id: true, email: true }
   })
 
-  console.log('user', user)
-
   if (!user) {
     return res.status(200).json({ ok: false, message: 'User not found' })
   }
@@ -277,8 +275,6 @@ export async function requestPasswordReset(req: Request, res: Response) {
     subject: 'Recuperación de contraseña',
     html: `<p>Haz click <a href="${resetLink}">aquí</a> para restablecer tu contraseña. Este enlace expira en 15 minutos.</p>`
   })
-
-  console.log('Email sent:', emailResponse.accepted, emailResponse.rejected)
 
     res.json({ ok: true, message: 'Recovery email sent' })
 }

@@ -151,8 +151,6 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
             }
         })
 
-        console.log('[CashFlow] AdminProfitShares used for calculation:', JSON.stringify(adminShares, null, 2))
-
         for (const month of pendingMonths) {
             const monthStart = month.start
             const monthEnd = month.end
@@ -312,7 +310,6 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
         })
 
         const response = { adminPayments, amountToReceive, amountReceived, amountToPay, amountPaid, adminAmountToReceive, adminAmountReceived }
-        console.log('[CashFlow Summary - Admin]', JSON.stringify(response, null, 2))
         return res.json(response)
     } else if (role === 'coordinator') {
         // For the coordinator, the logic is basically the same, but we need to filter the payments by the institution of the coordinator, and we also need to calculate the share for the coordinator, that is stored in the CoordinatorProfitShare relation.
@@ -476,7 +473,6 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
         }, 0)
 
         const response = { coordinatorPayments: coordinatorPaymentsResult, amountToReceive, amountReceived, amountToPay, amountPaid, coordinatorAmountToReceive, coordinatorAmountReceived }
-        console.log('[CashFlow Summary - Coordinator]', JSON.stringify(response, null, 2))
         return res.json(response)
     } else {
         return res.status(400).json({ ok: false, message: 'Forbidden' })
@@ -788,7 +784,6 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
         const startIndex = (pageNumber - 1) * pageSizeNumber
         const items = filteredTutorsAndPayments.slice(startIndex, startIndex + pageSizeNumber)
 
-        console.log('[CashFlow Details - Tutors]', JSON.stringify({ total, page: pageNumber, pageSize: pageSizeNumber, items }, null, 2))
         return res.json({
             total,
             page: pageNumber,
@@ -1063,7 +1058,6 @@ export async function getCashFlowDetails(req: Request, res: Response, next: Next
         const startIndex = (pageNumber - 1) * pageSizeNumber
         const items = filteredGuardiansAndPayments.slice(startIndex, startIndex + pageSizeNumber)
 
-        console.log('[CashFlow Details - Guardians]', JSON.stringify({ total, page: pageNumber, pageSize: pageSizeNumber, items }, null, 2))
         return res.json({
             total,
             page: pageNumber,
