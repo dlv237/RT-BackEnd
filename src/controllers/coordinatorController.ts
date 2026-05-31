@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express'
 import prisma from '../lib/prisma'
 import { PaymentStatus } from '@prisma/client'
 
-// Edit CoordinatorProfitShare
 export async function editCoordinatorProfitShare(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params
@@ -119,7 +118,6 @@ export async function editCoordinatorProfitShare(req: Request, res: Response, ne
   }
 }
 
-// Make coordinator payment
 export async function makeCoordinatorPayment(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params

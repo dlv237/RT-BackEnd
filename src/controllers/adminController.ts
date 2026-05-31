@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import prisma from '../lib/prisma'
 
-// Edit AdminProfitShare
 export async function editAdminProfitShare(req: Request, res: Response, next: NextFunction) {
   try {
     const { profitShare } = req.body
@@ -53,7 +52,6 @@ export async function editAdminProfitShare(req: Request, res: Response, next: Ne
       }
     }
 
-    // Use a transaction to rotate the active share aligned to month boundaries
     const newAdminProfitShare = await prisma.$transaction(async (tx) => {
       // If a share already starts this month (repeated edit within same month), delete it so it
       // can be cleanly replaced — prevents stacking multiple shares in the same month.
@@ -151,7 +149,6 @@ export async function deleteAdminPayment(req: Request, res: Response, next: Next
     if (userRole !== 'admin') {
       return res.status(403).json({ ok: false, message: 'Forbidden' })
     }
-    // The period is at the start of the month, so we can delete by period without worrying about timezones
 
     const periodParam = Array.isArray(period) ? period[0] : period
 

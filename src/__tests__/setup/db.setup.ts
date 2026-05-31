@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
 import * as dotenv from 'dotenv'
 
-// Load test environment variables
 dotenv.config({ path: '.env.test' })
 
 let testPrisma: PrismaClient
@@ -45,7 +44,6 @@ export async function resetTestDatabase(): Promise<void> {
     throw new Error('TEST_DATABASE_URL or DATABASE_URL must be set')
   }
 
-  // Reset database using Prisma migrate reset (only in test environment)
   if (process.env.NODE_ENV === 'test') {
     try {
       execSync('npx prisma migrate reset --force --skip-seed', {
@@ -77,7 +75,6 @@ export async function cleanupTestDatabase(): Promise<void> {
 export async function truncateAllTables(): Promise<void> {
   const prisma = getTestPrisma()
 
-  // Get all table names from Prisma schema (PostgreSQL uses lowercase with quotes)
   const tables = [
     'RefreshToken',
     'UserBankAccount',
@@ -92,8 +89,6 @@ export async function truncateAllTables(): Promise<void> {
     'AdminPayment',
   ]
 
-  // Truncate all tables with CASCADE to handle foreign keys
-  // PostgreSQL automatically handles foreign key constraints with CASCADE
   const tableList = tables.map((t) => `"${t}"`).join(', ')
   try {
     await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE;`)

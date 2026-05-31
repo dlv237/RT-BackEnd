@@ -38,9 +38,6 @@ app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Revisar si tiene que ir antes de los app.use y app.get
-//setRoutes(app)
-
 // Swagger docs
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.get('/docs.json', (_req, res) => res.json(swaggerSpec))

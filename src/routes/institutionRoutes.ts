@@ -1,4 +1,3 @@
-// routes/institutionRoutes.ts
 import { Router } from 'express'
 
 import {

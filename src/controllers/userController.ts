@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express'
 import prisma from '../lib/prisma'
 import argon2 from 'argon2'
 import { AccountType, PaymentStatus, UserRole } from '@prisma/client'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 type AuthPayload = {
   uid?: number | string
@@ -86,7 +85,7 @@ export async function getUsers(_req: Request, res: Response, next: NextFunction)
     })
 
     const safeUsers = users.map((u) => {
-      const { hashedPassword, ...rest } = u
+      const { ...rest } = u
       return rest
     })
 
@@ -178,7 +177,8 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       }
     }
 
-    // Before creating the coordinator user, we must check if the profit share to asign would exceed the 100% limit for the institution. We consider the profit share of the admin (if exists) and the profit share of the other coordinators of the institution (if exists).
+    // Before creating the coordinator user, we must check if the profit share to asign would exceed the 100% limit for the institution. 
+    // We consider the profit share of the admin (if exists) and the profit share of the other coordinators of the institution (if exists).
 
     const totalCoordinatorsCurrentProfitShare = await prisma.coordinatorProfitShare.aggregate({
       where: {
@@ -221,7 +221,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       })
     }
 
-    // Condiciones para cada rol
+    // Role conditions
     if (role !== 'admin' && institutionId == null && userRole !== 'coordinator') {
       return res.status(400).json({
         ok: false,
@@ -250,7 +250,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       })
     }
 
-    // Asignar un institutionId para el apoderado, el del coordinador que lo creo o el dado por el admin.
+    // Assign an institutionId for the guardian, the one of the coordinator that created it or the one given by the admin.
     let finalInstitutionId: number = institutionId
 
     if (userRole === 'coordinator') {
@@ -357,7 +357,6 @@ export async function createUser(req: Request, res: Response, next: NextFunction
         },
       })
     }
-    // Then: Send email with credentials (omitted for now)
     res.status(201).json({ ok: true, user: newUser })
   } catch (err) {
     next(err)
@@ -394,7 +393,7 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
     const twoYearsAgo = new Date(now)
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
 
-    // Solo eliminar si no hay pagos pendientes en los ultimos 2 anos (apoderado)
+    // Only deactivate if there are no pending payments in the last 2 years (guardian)
     if (role === 'guardian') {
       const pendingPayment = await prisma.classPayment.findFirst({
         where: {
@@ -419,7 +418,7 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Solo eliminar si no hay pagos pendientes en los ultimos 2 anos (tutor)
+    // Only delete if there are no pending payments in the last 2 years (tutor)
     if (role === 'tutor') {
       const pendingPayment = await prisma.classPayment.findFirst({
         where: {
@@ -442,8 +441,8 @@ export async function deactivateUser(req: Request, res: Response, next: NextFunc
       }
     }
 
-    // Coordinador: pagos pendientes o faltantes solo en meses completos desde su alta
-    // (max. 24 meses hacia atras, excluyendo el mes actual).
+    // Coordinator: pending or missing payments only in complete months since its creation
+    // (max. 24 months back, excluding the current month).
     if (role === 'coordinator') {
       const coordinator = await prisma.user.findUnique({
         where: { id: userId },
@@ -842,7 +841,7 @@ export async function getTutorLinks(req: Request, res: Response, next: NextFunct
     }
 
     res.json(tutorLinks)
-  } catch (err: PrismaClientKnownRequestError | any) {
+  } catch (err) {
     next(err)
   }
 }
@@ -892,7 +891,7 @@ export async function getGuardianLinks(req: Request, res: Response, next: NextFu
     }
 
     res.json(guardianLinks)
-  } catch (err: PrismaClientKnownRequestError | any) {
+  } catch (err) {
     next(err)
   }
 }
@@ -1029,7 +1028,7 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
         })
       }
     }
-    // TO DO: Revisar criterio de eliminacion
+    
     await prisma.$transaction(async (tx) => {
       if (userRole === 'coordinator') {
         const scopedUser = await tx.user.findFirst({

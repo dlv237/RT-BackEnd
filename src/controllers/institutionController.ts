@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import prisma from '../lib/prisma'
-import { UserRole, ClassType, ClassModality } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 
 export async function createInstitution(req: Request, res: Response, next: NextFunction) {
   try {

@@ -33,7 +33,7 @@ describe('Test Setup Verification', () => {
     expect(user.email).toBe('test@example.com')
     expect(user.role).toBe('tutor')
     expect(user.hashedPassword).toBeDefined()
-    expect(user.hashedPassword).not.toBe('TestPassword123!') // Should be hashed
+    expect(user.hashedPassword).not.toBe('TestPassword123!')
   })
 
   it('should clean up test data', async () => {

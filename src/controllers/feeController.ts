@@ -3,7 +3,7 @@ import prisma from '../lib/prisma'
 import { Fee } from '@prisma/client'
 import { calculateFeeAmount } from './utils'
 
-// Get all active fees from an institution
+// Get all ACTIVE fees from an institution
 export async function getFees(req: Request, res: Response, next: NextFunction) {
   try {
     const { institutionId } = req.params
@@ -16,7 +16,6 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
     const translatedFees = translateFees(fees)
 
     if (userRole === 'guardian') {
-      // Return type, modality, numberOfStudents, guardianAmount
       const result = translatedFees.map((fee) => ({
         type: fee.type,
         modality: fee.modality,
@@ -25,7 +24,6 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
       }))
       res.status(200).json(result)
     } else if (userRole === 'tutor') {
-      // Return type, modality, numberOfStudents, tutorAmount
       const result = translatedFees.map((fee) => ({
         type: fee.type,
         modality: fee.modality,
@@ -34,7 +32,6 @@ export async function getFees(req: Request, res: Response, next: NextFunction) {
       }))
       res.status(200).json(result)
     } else if (userRole === 'coordinator' || userRole === 'admin') {
-      // Return type, modality, numberOfStudents, tutorAmount, guardianAmount
       res.status(200).json(translatedFees)
     } else {
       return res.status(403).json({ ok: false, message: 'Forbidden' })

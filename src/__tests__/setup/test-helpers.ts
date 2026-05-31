@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 import argon2 from 'argon2'
 import { getJose } from '../../lib/jose'
 import { hashToken, randomToken } from '../../lib/tokens'

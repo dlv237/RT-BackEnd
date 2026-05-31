@@ -4,7 +4,6 @@ import prisma from '../../../lib/prisma'
 import argon2 from 'argon2'
 import { randomToken, hashToken } from '../../../lib/tokens'
 
-// Mock dependencies
 jest.mock('../../../lib/prisma', () => ({
   __esModule: true,
   default: {
@@ -28,7 +27,6 @@ jest.mock('../../../lib/prisma', () => ({
  * Uses unique global names (__mockJwtVerifyController) to avoid conflicts
  * with other test files that mock the same module.
  */
-let mockJwtVerify: jest.Mock
 let mockSignJWT: jest.Mock
 
 jest.mock('../../../lib/jose', () => {
@@ -40,7 +38,6 @@ jest.mock('../../../lib/jose', () => {
     sign: jest.fn().mockResolvedValue('mock-access-token'),
   }))
 
-  // Store references for later use in tests
   ;(global as any).__mockJwtVerifyController = mockJwtVerifyFn
   ;(global as any).__mockSignJWTController = mockSignJWTFn
 

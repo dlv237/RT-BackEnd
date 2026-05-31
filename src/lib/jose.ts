@@ -5,7 +5,9 @@
 // WORKAROUND: Force 'jose' inclusion in Vercel/NFT builds
 try {
   require.resolve('jose')
-} catch {}
+} catch {
+  // Ignore
+}
 
 let _jose: typeof import('jose') | null = null
 

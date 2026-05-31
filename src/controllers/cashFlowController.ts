@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma'
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response } from 'express'
 import { UserRole, PaymentStatus, PaymentType } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 
@@ -29,7 +29,7 @@ async function getCoordinatorCreationMonthStart(userId: number) {
 }
 type GuardianPaymentStatusView = PaymentStatus | 'No payments'
 
-export async function getCashFlowSummary(req: Request, res: Response, next: NextFunction) {
+export async function getCashFlowSummary(req: Request, res: Response) {
   const { startDate, endDate } = req.query
   const role = (req as any).auth.role as UserRole
 
@@ -268,7 +268,7 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
       }, 0)
     }
 
-    // Finally, we can sum the amounts for each month and return the result.
+    // Sum the amounts for each month and return the result.
 
     const payments = await prisma.classPayment.groupBy({
       by: ['guardianPaymentStatus', 'tutorPaymentStatus'],
@@ -317,7 +317,6 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
     }
     return res.json(response)
   } else if (role === 'coordinator') {
-    // For the coordinator, the logic is basically the same, but we need to filter the payments by the institution of the coordinator, and we also need to calculate the share for the coordinator, that is stored in the CoordinatorProfitShare relation.
 
     const institutionId = (req as any).auth.institutionId
     const userId = (req as any).auth.uid
@@ -493,7 +492,7 @@ export async function getCashFlowSummary(req: Request, res: Response, next: Next
   }
 }
 
-export async function getCashFlowDetails(req: Request, res: Response, next: NextFunction) {
+export async function getCashFlowDetails(req: Request, res: Response) {
   const { startDate, endDate, filteredUserRole, page = 1, pageSize = 10 } = req.query
 
   const role = (req as any).auth.role as UserRole

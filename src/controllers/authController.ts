@@ -302,7 +302,7 @@ export async function requestPasswordReset(req: Request, res: Response) {
 
   const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`
 
-  const emailResponse = await sendEmail({
+  await sendEmail({
     to: email,
     subject: 'Recuperación de contraseña',
     html: `<p>Haz click <a href="${resetLink}">aquí</a> para restablecer tu contraseña. Este enlace expira en 15 minutos.</p>`,
@@ -346,7 +346,7 @@ export async function resetPassword(req: Request, res: Response) {
     })
 
     res.json({ ok: true, message: 'Password updated successfully' })
-  } catch (error) {
+  } catch {
     return res.status(400).json({ ok: false, message: 'Invalid or expired token' })
   }
 }

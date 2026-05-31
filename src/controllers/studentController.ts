@@ -120,9 +120,7 @@ export async function getStudentsByGuardianId(req: Request, res: Response, next:
     const { guardianId } = req.params
     const userRole = (req as any).auth?.role
     const userId = (req as any).auth?.uid as number | undefined
-    const sendInactive =
-      req.query.sendInactive === undefined ? true : req.query.sendInactive === 'true'
-
+    
     if (!userRole) {
       return res.status(403).json({ ok: false, message: 'Forbidden' })
     }
